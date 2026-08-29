@@ -11,10 +11,18 @@ import numpy as np
 import pytest
 import torch
 
-torch.set_default_dtype(torch.float64)
-
 STEPS = 8192
 QUAD_TOL = 1e-7  # midpoint-rule error for the smooth deltas used below
+
+
+@pytest.fixture(autouse=True)
+def double_precision():
+    """Scoped to this module. Setting the global default dtype at import leaks into every other
+    test module and silently makes trained models double while inference feeds float32."""
+    prev = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float64)
+    yield
+    torch.set_default_dtype(prev)
 
 
 def integrated_gradients(fn, x, b, steps=STEPS):
