@@ -92,3 +92,39 @@ def test_frozen_model_has_no_instance_level_change():
     # never the value of the explanation at a fixed x
     probe_t, _ = tgt.sample(200, np.random.default_rng(4))
     assert np.array_equal(grads(probe_t), grads(probe_t))
+
+
+def test_regime_subsets_are_independent_of_build_order():
+    """Regression guard: building regimes in subsets must give identical checkpoints to building
+    them together. A shared sequential RNG makes a skipped regime shift every later draw, which
+    silently made the placebo treatment identical to the null."""
+    src, tgt = make_pair("none")
+    full = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG)
+    part_a = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG, regimes=("null",))
+    part_b = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG, regimes=("treatment",))
+
+    for name, part in (("null", part_a), ("treatment", part_b)):
+        assert checkpoint_hash(part[name][0].state_dict()) == checkpoint_hash(
+            full[name][0].state_dict()
+        ), name
+
+
+def test_placebo_treatment_differs_from_the_null():
+    """With no shift the treatment is a second draw from the source distribution, so it must
+    differ from the null while being statistically exchangeable with it."""
+    src, tgt = make_pair("none")
+    ck = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG)
+    assert checkpoint_hash(ck["null"][0].state_dict()) != checkpoint_hash(
+        ck["treatment"][0].state_dict()
+    )
+
+
+def test_seed_floor_reuses_the_source_training_data():
+    """The Rashomon floor varies initialisation, not the sample; otherwise it confounds seed
+    variation with sampling variation and inflates the floor."""
+    src, tgt = make_pair("none")
+    ck = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG)
+    assert ck["seed"][1]["n_train"] == ck["source"][1]["n_train"]
+    assert checkpoint_hash(ck["seed"][0].state_dict()) != checkpoint_hash(
+        ck["source"][0].state_dict()
+    )
