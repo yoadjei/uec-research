@@ -159,11 +159,47 @@ It does not — only the aggregate does. The real asymmetry, and the one we prov
 > stability; local-gradient explainers inherit nothing, not even in aggregate. **Neither inherits
 > stability of the allocation across features** — which is what practitioners actually read.
 
+## 8b. Update strength is a primary axis, not an ablation (D5)
+
+The null and the treatment apply the *same* operator, so both contain the same optimisation
+transient; only the treatment additionally contains the distribution signal. The ratio therefore
+depends on update strength in a way that is itself a result, and the pilot sweep confirms it:
+
+| update | `Δ/ρ_null` | `Δ/ρ_seed` | prediction agreement |
+|---|---|---|---|
+| 1 epoch, lr 2e-4 | **≈ 3.1** | ≈ 0.5 | 0.95 |
+| 5 epochs, lr 5e-4 | ≈ 1.6 | ≈ 0.7 | 0.92 |
+| 150 epochs, lr 2e-3 | ≈ 1.0 | **≈ 2.3** | 0.84 |
+
+Two things follow, and both are load-bearing.
+
+1. **Light updates isolate the shift.** The gentler the update, the larger the ratio *and* the
+   better predictions are preserved — the two desiderata align rather than trade off. Light
+   incremental fine-tuning is also the realistic deployment regime.
+2. **The choice of control reverses the conclusion.** Against the seed floor that prior work uses,
+   a heavy update looks like the *most* shift-driven condition (2.3×); against the matched null it
+   is the *least* (1.0×). The seed floor is fixed while `Δ` grows with training, so the ratio to it
+   measures how hard you trained, not how far the data moved. This is the empirical justification
+   for D2, and it means a substantial part of the attribution movement reported after fine-tuning
+   in prior work is attributable to the optimisation rather than to the new distribution.
+
+Consequently the experiment grid crosses **shift magnitude × update strength**, and the headline
+figure reports the ratio surface rather than a single number.
+
+### Shared support bounds the studiable shift
+
+Overlap at `τ = 2` falls as the covariate shift grows: 0.84 at magnitude 0.5, 0.54 at 0.75, 0.32 at
+1.0, 0.10 at 1.5, 0.028 at 2.0. Beyond magnitude ≈ 2 there is essentially no region where both
+models are in-distribution, so instance-level comparison stops being meaningful. Magnitude 1.5 is
+the headline (10% overlap); 2.0 is reported as a marginal-overlap sensitivity check. The overlap
+fraction is reported beside every number.
+
 ## 9. Hypotheses
 
 | ID | Statement | Test |
 |---|---|---|
-| H1 | Under covariate-shift updates (`ω = 0`), `Δ` exceeds `ρ_null` on prediction-preserved probes for most explainers | paired Wilcoxon, Cliff's δ, seed-bootstrap CI on `ratio` |
+| H1 | Under covariate-shift updates (`ω = 0`), `Δ` exceeds `ρ_null` on prediction-preserved probes, by a margin that grows as the update gets lighter and the shift larger | paired Wilcoxon, Cliff's δ, seed-bootstrap CI on `ratio` over the magnitude × update grid |
+| H1b | Ranking the update regimes by `Δ/ρ_seed` inverts the ranking by `Δ/ρ_null` | rank correlation between the two orderings across the grid |
 | H2 | Under concept and shortcut shift, `Δ` is larger *and* aligned with ω | Pearson/Spearman `corr(Δ_E(x), ω(x))` |
 | H3 | Unwarranted change is not predicted by ID accuracy, ECE, or prediction-agreement rate | partial correlation / OLS across runs |
 | H4 | `\|1ᵀΔIG\| / (\|δ(x)\|+\|δ(b)\|) ≤ 1` always; the same ratio for G×I exceeds 1 frequently; `ε_coal ≫ ε_data` | per-point bound check |
