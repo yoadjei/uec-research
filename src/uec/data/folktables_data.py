@@ -66,21 +66,37 @@ def domain_logit(Xs, Xt, seed: int = 0, n_splits: int = 4):
     return out, float(roc_auc_score(d, out))
 
 
-def shared_support_probe(Xs, Xt, n: int, rng, tau: float = 1.0, seed: int = 0):
+def shared_support_probe(Xs, Xt, n: int, rng, tau: float = 1.0, seed: int = 0, ys=None, yt=None):
     """Points whose estimated log density ratio lies within tau of the prior-corrected origin.
 
-    Returns the probe, the domain each point came from, and the pooled classifier AUC. The origin
-    labels are what make the balance check meaningful.
+    Returns a `Probe` carrying X, the true labels, the domain each point came from, and the pooled
+    classifier AUC. Labels must be carried through the screen, not reconstructed afterwards: the
+    calibration check in `mechanism_stability` is meaningless against approximated labels.
     """
     X = np.vstack([Xs, Xt])
     origin = np.concatenate([np.zeros(len(Xs)), np.ones(len(Xt))]).astype(int)
+    y = None if ys is None or yt is None else np.concatenate([ys, yt])
+
     logit, auc = domain_logit(Xs, Xt, seed=seed)
     keep = np.abs(logit - np.log(len(Xt) / len(Xs))) <= tau
-    pool, pool_origin = X[keep], origin[keep]
-    if len(pool) < n:
-        raise RuntimeError(f"shared support too thin: {len(pool)}/{n} at tau={tau} (auc={auc:.3f})")
-    idx = rng.choice(len(pool), n, replace=False)
-    return pool[idx], pool_origin[idx], auc
+    if keep.sum() < n:
+        raise RuntimeError(
+            f"shared support too thin: {int(keep.sum())}/{n} at tau={tau} (auc={auc:.3f})"
+        )
+    idx = np.flatnonzero(keep)[rng.choice(int(keep.sum()), n, replace=False)]
+    return Probe(X[idx], None if y is None else y[idx], origin[idx], auc)
+
+
+@dataclass
+class Probe:
+    X: np.ndarray
+    y: np.ndarray | None
+    origin: np.ndarray
+    domain_auc: float
+
+    def by_domain(self, which: int):
+        m = self.origin == which
+        return self.X[m], (None if self.y is None else self.y[m]), m
 
 
 def probe_balance_auc(probe, origin, seed: int = 0) -> float:

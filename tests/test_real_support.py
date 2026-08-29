@@ -40,7 +40,8 @@ def test_domain_logit_recovers_the_true_log_density_ratio():
 
 def test_shared_support_probe_is_near_chance_for_a_domain_classifier():
     Xs, Xt = _gaussian_pair(shift=0.8)
-    probe, origin, auc = shared_support_probe(Xs, Xt, 800, np.random.default_rng(1), tau=0.3)
+    pr = shared_support_probe(Xs, Xt, 800, np.random.default_rng(1), tau=0.3)
+    probe, origin, auc = pr.X, pr.origin, pr.domain_auc
     assert len(probe) == 800
     assert auc > 0.7  # the domains are separable overall
     assert 0.35 < probe_balance_auc(probe, origin) < 0.65  # but not inside the probe
@@ -50,7 +51,8 @@ def test_probe_is_more_balanced_than_the_raw_pool():
     """The screen must actually do something: the unscreened pool should be separable."""
     Xs, Xt = _gaussian_pair(shift=1.2)
     _, pooled_auc = domain_logit(Xs, Xt, seed=2)
-    probe, origin, _ = shared_support_probe(Xs, Xt, 800, np.random.default_rng(2), tau=0.3)
+    pr = shared_support_probe(Xs, Xt, 800, np.random.default_rng(2), tau=0.3)
+    probe, origin = pr.X, pr.origin
     assert pooled_auc > 0.85
     assert probe_balance_auc(probe, origin) < pooled_auc - 0.20
 
@@ -58,8 +60,8 @@ def test_probe_is_more_balanced_than_the_raw_pool():
 def test_tighter_tau_yields_a_tighter_probe():
     Xs, Xt = _gaussian_pair(shift=1.0)
     rng = np.random.default_rng(3)
-    wide, _, _ = shared_support_probe(Xs, Xt, 500, rng, tau=1.5)
-    tight, _, _ = shared_support_probe(Xs, Xt, 500, rng, tau=0.3)
+    wide = shared_support_probe(Xs, Xt, 500, rng, tau=1.5).X
+    tight = shared_support_probe(Xs, Xt, 500, rng, tau=0.3).X
     m = np.full(6, 1.0)
     spread = lambda P: np.std(P @ m)
     assert spread(tight) < spread(wide)
@@ -95,6 +97,17 @@ def test_mechanism_stability_detects_a_shifted_conditional():
 @pytest.mark.parametrize("shift", [0.5, 1.0])
 def test_probe_lies_between_the_domains(shift):
     Xs, Xt = _gaussian_pair(shift=shift)
-    probe, _, _ = shared_support_probe(Xs, Xt, 500, np.random.default_rng(6), tau=0.5)
+    probe = shared_support_probe(Xs, Xt, 500, np.random.default_rng(6), tau=0.5).X
     m = probe.mean(0).mean()
     assert min(0.0, shift) - 0.4 < m < max(0.0, shift) + 0.4
+
+
+def test_probe_carries_true_labels_through_the_screen():
+    """Labels must survive the screen. Reconstructing them afterwards would silently invalidate
+    the calibration check that stands in for omega on real data."""
+    Xs, Xt = _gaussian_pair(shift=0.6)
+    ys = (Xs[:, 0] > 0).astype(int)
+    yt = (Xt[:, 0] > 0).astype(int)
+    pr = shared_support_probe(Xs, Xt, 400, np.random.default_rng(7), tau=0.5, ys=ys, yt=yt)
+    assert pr.y is not None and len(pr.y) == 400
+    assert np.array_equal(pr.y, (pr.X[:, 0] > 0).astype(int))
