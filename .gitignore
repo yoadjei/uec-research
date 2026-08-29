@@ -12,3 +12,4 @@ __pycache__/
 # local working artefacts, not part of the deliverable
 /tasks/
 /explanation_drift_audit.md
+/docs/phase0_verification.md
