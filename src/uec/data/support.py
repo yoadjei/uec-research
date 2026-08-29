@@ -20,7 +20,7 @@ def shared_support_probe(
     n: int,
     rng: np.random.Generator,
     tau: float = 2.0,
-    oversample: int = 60,
+    oversample: int = 600,
 ):
     """Draw from a balanced source/target mixture, keep the overlap, subsample to `n`.
 
