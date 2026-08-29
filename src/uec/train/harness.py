@@ -88,33 +88,43 @@ def operator_signature(meta: dict) -> tuple:
     return (meta["n_train"], meta["n_steps"], meta["lr"], meta["epochs"])
 
 
+STREAM = {"source": 0, "null": 1, "treatment": 2, "scratch": 4}
+
+
+def _stream(seed: int, tag: str) -> np.random.Generator:
+    """Named streams, not a shared sequential generator: regimes must be constructible in any
+    order and in any subset, otherwise a caller that requests only some of them silently shifts
+    the draws of the rest."""
+    return np.random.default_rng([seed, STREAM[tag]])
+
+
 def build_checkpoints(src_env, tgt_env, seed, n_source, n_update, cfg, ucfg, regimes=None):
     """Source model plus every control and treatment checkpoint for one seed.
 
     `null` and `treatment` are trained by the same operator on the same number of points; only the
-    sampling distribution differs. `n_update` is shared so the operator signatures match exactly.
+    sampling distribution differs. `seed` reuses the source model's own training data with a
+    different initialisation, which is the Rashomon floor as EvoXplain and Laberge et al. measure
+    it -- resampling the data as well would confound seed variation with sampling variation.
     """
     regimes = regimes or ("null", "seed", "treatment", "scratch")
-    rng = np.random.default_rng(10_000 + seed)
 
-    Xs, ys = src_env.sample(n_source, rng)
+    Xs, ys = src_env.sample(n_source, _stream(seed, "source"))
     f_source, meta_source = train_source(Xs, ys, cfg, seed)
     out = {"source": (f_source, meta_source)}
 
     if "null" in regimes:
-        Xn, yn = src_env.sample(n_update, rng)
+        Xn, yn = src_env.sample(n_update, _stream(seed, "null"))
         out["null"] = update(f_source, Xn, yn, ucfg, seed + 1)
 
     if "treatment" in regimes:
-        Xt, yt = tgt_env.sample(n_update, rng)
+        Xt, yt = tgt_env.sample(n_update, _stream(seed, "treatment"))
         out["treatment"] = update(f_source, Xt, yt, ucfg, seed + 1)
 
     if "seed" in regimes:
-        Xs2, ys2 = src_env.sample(n_source, rng)
-        out["seed"] = train_source(Xs2, ys2, cfg, seed + 5000)
+        out["seed"] = train_source(Xs, ys, cfg, seed + 5000)
 
     if "scratch" in regimes:
-        Xt2, yt2 = tgt_env.sample(n_source, rng)
+        Xt2, yt2 = tgt_env.sample(n_source, _stream(seed, "scratch"))
         out["scratch"] = train_source(Xt2, yt2, cfg, seed + 7000)
 
     return out
