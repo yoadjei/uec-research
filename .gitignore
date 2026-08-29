@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+data/
+runs/
+figures/
+results/
+*.npz
+*.parquet
+
+# local working artefacts, not part of the deliverable
+tasks/
+explanation_drift_audit.md
