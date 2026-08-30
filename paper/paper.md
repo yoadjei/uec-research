@@ -377,6 +377,13 @@ The raw magnitudes tell the same story (IG: 0.0398 vs 0.0386, p = 0.63; KernelSH
 0.0415, p = 0.23), and for saliency and Grad×Input they differ in the *wrong direction* — moving
 **more** when nothing should change than when everything should.
 
+**The per-point version is sharper still (Fig. 3).** Within a single shift family, plotting each
+probe point's measured change against its own warranted change gives a flat horizontal band well
+below the Δ = ω diagonal: Δ stays at roughly 0.04–0.06 while ω ranges from 0 to 0.85, with
+r = 0.10 under concept shift and r = −0.09 under shortcut removal. The measured change does not
+track the warranted change *at all* — not weakly, not with the wrong slope, but with essentially
+zero correlation across an eightfold range of ω.
+
 Under a light update, then, attribution change carries essentially no information about whether the
 underlying mechanism moved.
 
@@ -472,6 +479,19 @@ agreement 0.94–0.96:
 Cliff's δ is +1.00 — perfect separation across all ten seeds — for saliency, SmoothGrad and
 Grad×Input on three of four targets. EG is again pinned at ≈ 1.0 by its own noise floor, and is the
 single non-significant cell.
+
+**A temporal shift on the same population.** Holding the state fixed and moving CA 2018 → CA 2022
+gives a milder shift (domain AUC 0.64 against 0.71 for the state pairs) and, correspondingly, a
+smaller effect: ratios 1.22–1.42, with five of seven explainers significant after Holm and
+prediction agreement at 0.974. Integrated Gradients is borderline (1.22, Holm p = 0.074). This is
+the weakest real-data result in the paper and we report it as such — a milder shift moves
+explanations less, which is what the covariate-magnitude sweep predicts.
+
+One caveat is structural rather than statistical: ACS renamed the relationship feature in 2019, so
+the year comparison uses the nine features common to both schemas rather than ten. The positive rate
+also moves from 0.411 to 0.473 over the four years, because the $50k income threshold is nominal
+while wages are not, so this shift carries a label component and is *not* a clean covariate shift.
+We therefore do not treat ω = 0 as defensible here and report Δ against its floors only.
 
 ω is not computable here, so **no change on real data is labelled warranted**. The
 calibration-transfer check `mech_gap` is a *necessary-not-sufficient* screen on the covariate null,
