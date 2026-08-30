@@ -51,6 +51,7 @@ pytest tests/ -q                       # includes the proposition checks
 python experiments/run_synthetic.py    # E0-E7: floors, treatments, theory
 python experiments/sweep_regime.py     # shift magnitude x update strength
 python experiments/run_differentiation.py   # what ROS / FASS / Delta-Audit report instead
+python experiments/run_trees.py        # xgboost + exact TreeSHAP, retrain-only
 python experiments/run_folktables.py   # ACS state shifts
 python experiments/run_vision.py       # CIFAR-10 sanity check
 
@@ -77,6 +78,11 @@ regime, seed and checkpoint weight hash.
 - **The control decides the answer.** As updates get heavier, change relative to the matched null
   *falls* (1.81 → 1.09) while change relative to the seed floor *rises* (0.11 → 1.07). Prior work's
   implicit control orders the regimes backwards.
+- **On a no-shift placebo the seed floor invents an effect.** With gradient-boosted trees and exact
+  TreeSHAP, and nothing shifted at all, the matched null reports 0.98 (not significant) while the
+  seed floor reports 1.90.
+- **Not a gradient artefact.** The effect is largest for trees with exact TreeSHAP (2.08), and holds
+  for MLPs, trees and a small CIFAR ResNet across seven attribution methods.
 - **Magnitude says nothing about legitimacy.** For six of seven explainers, change relative to the
   matched null is statistically indistinguishable between a shift that leaves the Bayes-optimal
   predictor untouched and one that rewrites it (IG: p = 0.56).
