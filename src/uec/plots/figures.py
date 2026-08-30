@@ -48,18 +48,23 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
         ax.errorbar(x, sub["mean"], yerr=[sub["mean"] - sub["lo"], sub["hi"] - sub["mean"]],
                     fmt="none", ecolor="0.25", elinewidth=0.7, capsize=1.8)
 
+    # the ratio is on a different scale from the bars; it annotates, it must not set the y-limit
+    bars = data[data.quantity != "ratio"]
+    ymax = bars["hi"].max() * 1.18
     for i, name in enumerate(plotted):
         r = data[(data.explainer == name) & (data.quantity == "ratio")]["mean"].values
         if r.size:
-            top = data[(data.explainer == name)]["hi"].max()
-            ax.text(i, top * 1.04, f"{r[0]:.2f}$\\times$", ha="center", fontsize=7.2, color=PALETTE["delta"])
+            top = bars[bars.explainer == name]["hi"].max()
+            ax.text(i, min(top * 1.06, ymax * 0.97), f"{r[0]:.2f}$\\times$", ha="center",
+                    fontsize=7.2, color=PALETTE["delta"])
+    ax.set_ylim(0, ymax)
 
     ax.set_xticks(np.arange(len(plotted)))
     ax.set_xticklabels([label(n) for n in plotted], rotation=18, ha="right")
     ax.set_ylabel(r"attribution change (normalised $\ell_1$)")
     ax.set_title(f"Explanation change against its floors — {FAMILY_LABEL.get(family, family)} shift"
                  f" ($\\epsilon={eps}$)")
-    ax.legend(ncol=2, loc="upper left")
+    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22))
     return fig, data
 
 
