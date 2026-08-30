@@ -69,6 +69,25 @@ python experiments/make_figures.py
 Every figure writes its source data beside the image. `results/registry.csv` maps each run to its
 regime, seed and checkpoint weight hash.
 
+## What it found
+
+- **Unwarranted change exists.** Under covariate shift, where the warranted change is exactly zero,
+  all seven explainers move more than their matched null (ratios 1.02–1.73, Holm-adjusted p = 0.014,
+  Cliff's δ up to +0.98). The no-shift placebo returns 1.00–1.10 with every interval covering 1.
+- **The control decides the answer.** As updates get heavier, change relative to the matched null
+  *falls* (1.81 → 1.09) while change relative to the seed floor *rises* (0.11 → 1.07). Prior work's
+  implicit control orders the regimes backwards.
+- **Magnitude says nothing about legitimacy.** For six of seven explainers, change relative to the
+  matched null is statistically indistinguishable between a shift that leaves the Bayes-optimal
+  predictor untouched and one that rewrites it (IG: p = 0.56).
+- **Two published metrics get it backwards.** Reimplemented on the same checkpoints, a FASS-style
+  filtered distance and Delta-Audit's spurious residual rank correct adaptation as 45% and 89%
+  *worse* than unwarranted drift. UEC gives them opposite signs.
+- **The theory holds.** Proposition 1(i): 0 violations in 20,000 probe points. Proposition 2:
+  Grad×Input breaks the same bound on 60.8%.
+- **It replicates on real data.** ACS Income, CA → four states: 27 of 28 explainer×state cells
+  significant after Holm.
+
 ## Reading the numbers
 
 - `delta` — attribution change across the update, on prediction-preserved probe points
