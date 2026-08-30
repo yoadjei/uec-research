@@ -151,6 +151,31 @@ def table_invisibility_grid(sweep):
     return pd.DataFrame(rows)
 
 
+def table_rashomon(sweep):
+    """H5: within-Rashomon vs accuracy-improving updates, stratified by shift magnitude.
+
+    The unstratified comparison is confounded -- accuracy-improving updates sit at larger shifts,
+    and magnitude drives the ratio -- so only the within-stratum contrast is interpretable.
+    """
+    from scipy.stats import mannwhitneyu
+
+    sweep = sweep.copy()
+    sweep["acc_gain"] = sweep.acc_treat_tgt - sweep.acc_src_on_tgt
+    rows = []
+    for (name, mag), s in sweep.groupby(["explainer", "magnitude"]):
+        lo, hi = s.acc_gain.quantile([1 / 3, 2 / 3])
+        a = s[s.acc_gain <= lo].ratio.values
+        b = s[s.acc_gain >= hi].ratio.values
+        if len(a) < 5 or len(b) < 5:
+            continue
+        rows.append({
+            "explainer": label(name), "magnitude": mag,
+            "within_rashomon": a.mean(), "accuracy_improving": b.mean(),
+            "p": mannwhitneyu(a, b).pvalue, "cliffs_delta": cliffs_delta(a, b),
+        })
+    return pd.DataFrame(rows)
+
+
 def table_differentiation(diff):
     cols = ["fass_distance", "delta_audit_jsd", "delta_audit_spurious", "ros_mean", "ros_max",
             "omega", "uec", "ratio"]
@@ -211,6 +236,7 @@ def main():
         built["T5_ablations"] = table_ablations(syn)
     if sweep is not None:
         built["T3c_invisibility_grid"] = table_invisibility_grid(sweep)
+        built["T6_rashomon"] = table_rashomon(sweep)
     if diff is not None:
         built["T4_differentiation"] = table_differentiation(diff)
     if theory is not None:
