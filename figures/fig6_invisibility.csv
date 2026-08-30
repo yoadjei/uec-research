@@ -1,0 +1,4 @@
+covariate,pearson_r,n
+agree_treat,-0.46931062039968313,10
+acc_treat_tgt,-0.14897102062126183,10
+ece_treat,0.030854424870442123,10
