@@ -636,6 +636,41 @@ our concept shift, while ℓ₁ gives 0.11 and top-3 gives 0.16. This is why k i
 why rank-based distances are not the primary choice here — with 15 of 20 features carrying zero
 attribution, a full sign flip of the mechanism registers as 1 − ρ_s = 0.002.
 
+### 8.0 What a stochastic explainer costs before it can answer the question
+
+Two explainers are noise-dominated at their default budgets, and "noise-dominated" without a number
+is a shrug. Sweeping the sample budget locates where `ν` falls below `ρ_null` — below that point the
+explainer cannot resolve the comparison at all, whatever the true effect is.
+
+| explainer | budget | ν/ρ_null | resolvable? | ratio | cost |
+|---|---|---|---|---|---|
+| SmoothGrad | 32 | 0.56 | **yes** | 1.58 | 0.2 s |
+| KernelSHAP | 128 *(default)* | 2.39 | no | 1.36 | 2.2 s |
+| KernelSHAP | 512 | 1.01 | borderline | 1.37 | 4.7 s |
+| KernelSHAP | 2048 | **0.50** | **yes** | 1.37 | 13.9 s |
+| LIME | 1500 *(default)* | 1.86 | no | 1.37 | 1.8 s |
+| LIME | 5000 | 1.03 | borderline | 1.36 | 3.3 s |
+| LIME | 15000 | **0.62** | **yes** | 1.36 | 12.1 s |
+| Expected Gradients | 32 | 0.98 | marginal | 1.04 | 0.2 s |
+| Expected Gradients | 512 | 0.79 | marginal | 1.19 | 3.7 s |
+
+Three things follow.
+
+**The estimate is stable; only its certifiability moves.** KernelSHAP's ratio is 1.363, 1.366, 1.372
+across a sixteenfold budget increase, and LIME's is 1.374, 1.363, 1.358. Sampling budget determines
+whether you can *certify* an effect, not what the effect is.
+
+**KernelSHAP needs roughly 16× its common default and LIME 10× theirs** to get below their own
+floors here — at 6× the compute. Practitioners auditing an update with default settings are, on this
+evidence, measuring their own sampler.
+
+**A noisy explainer inflates its own floor and therefore understates the effect.** `ρ_null` is
+measured with the same explainer, so explainer noise enters both numerator and denominator. As
+Expected Gradients' budget rises from 32 to 512, `ν` falls 0.154 → 0.044, `ρ_null` falls
+0.157 → 0.056, and the ratio *rises* 1.04 → 1.19. Expected Gradients is the hardest case: even at
+512 samples its noise is still 79% of its floor, and its ratio has not converged. Our headline range
+is therefore conservative with respect to the noise-dominated methods, not generous.
+
 ### 8.1 The remaining free choices
 
 Five further axes, 5 seeds each. Every configuration gives a ratio above 1; what varies is how much.
