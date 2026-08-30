@@ -60,7 +60,7 @@ def main():
             for ep in a.update_epochs:
                 ucfg = UpdateConfig(lr=a.update_lr, epochs=ep)
                 ck = build_checkpoints(src, tgt, seed, a.n_source, a.n_update, cfg, ucfg,
-                                       regimes=("null", "seed", "treatment"))
+                                       regimes=("matched_null", "seed", "treatment"))
                 f0, f1 = ck["source"][0], ck["treatment"][0]
                 p0, p1 = probabilities(f0, probe), probabilities(f1, probe)
                 z0, z1 = logits(f0, probe), logits(f1, probe)
@@ -73,7 +73,7 @@ def main():
                     bg, _ = src.sample(25, np.random.default_rng(seed))
                     A0 = attribute(f0, probe, name, background=bg)
                     A1 = attribute(f1, probe, name, background=bg)
-                    An = attribute(ck["null"][0], probe, name, background=bg)
+                    An = attribute(ck["matched_null"][0], probe, name, background=bg)
 
                     delta = change(A0, A1, l1_abs, d_l1)
                     floor = float(change(A0, An, l1_abs, d_l1)[mask].mean())

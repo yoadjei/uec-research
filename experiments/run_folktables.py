@@ -64,7 +64,7 @@ def build(Xs, ys, Xt, yt, seed, n_source, n_update, cfg, ucfg):
 
     f_seed, _ = train_source(Xs[i_src], ys[i_src], cfg, seed + 5000)
     assert meta_n["n_steps"] == meta_t["n_steps"] and meta_n["n_train"] == meta_t["n_train"]
-    return {"source": f0, "null": f_null, "treatment": f_treat, "seed": f_seed}, meta0
+    return {"source": f0, "matched_null": f_null, "treatment": f_treat, "seed": f_seed}, meta0
 
 
 def main():
@@ -129,7 +129,7 @@ def main():
                     "acc_treat_tgt": accuracy(ck["treatment"], Xt[:20000], tgt.y[:20000]),
                     "ece_treat": expected_calibration_error(ck["treatment"], Xt[:20000], tgt.y[:20000]),
                     "agree_treat": agreement_rate(f0, ck["treatment"], probe),
-                    "agree_null": agreement_rate(f0, ck["null"], probe),
+                    "agree_null": agreement_rate(f0, ck["matched_null"], probe),
                 }
 
                 background = probe[:50]
@@ -147,7 +147,7 @@ def main():
                             phi = NORMALISERS["abs"]
                             raw = {
                                 k: change(A["source"], A[k], phi, dist, feats)
-                                for k in ("treatment", "null", "seed")
+                                for k in ("treatment", "matched_null", "seed")
                             }
                             nu = change(A["source"], A0b, phi, dist, feats)
                             for eps in EPS_GRID:
@@ -157,7 +157,7 @@ def main():
                                 s = summarise(
                                     raw["treatment"][mask], np.zeros(int(mask.sum())),
                                     nu[mask] if EXPLAINERS[name].stochastic else np.zeros(0),
-                                    raw["null"][mask], raw["seed"][mask], n_probe=n,
+                                    raw["matched_null"][mask], raw["seed"][mask], n_probe=n,
                                     seed=seed, family="covariate_state", explainer=name,
                                     explainer_family=EXPLAINERS[name].family,
                                     distance=dname, phi="abs", features=feat_name, eps=eps,

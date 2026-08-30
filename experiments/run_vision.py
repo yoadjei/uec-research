@@ -128,7 +128,7 @@ def run(a):
             fit(f_seed, src_train, ys, a.lr, a.epochs, a.batch, seed + 5000)
             assert n_null == n_treat
 
-            models = {"source": f0, "null": f_null, "treatment": f_treat, "seed": f_seed}
+            models = {"source": f0, "matched_null": f_null, "treatment": f_treat, "seed": f_seed}
             Xp = normalise(probe)
             p0 = softmax(predict_logits(f0, Xp))
             target_class = p0.argmax(1)
@@ -157,7 +157,7 @@ def run(a):
 
                 for dname, dist in dists.items():
                     raw = {k: change(A["source"], A[k], l1_abs, dist)
-                           for k in ("treatment", "null", "seed")}
+                           for k in ("treatment", "matched_null", "seed")}
                     nu = change(A["source"], A0b, l1_abs, dist)
                     for eps in (0.02, 0.05, 0.10):
                         m = preserved_mask(np.zeros(len(gap)), gap, eps)
@@ -166,12 +166,12 @@ def run(a):
                         s = summarise(
                             raw["treatment"][m], np.zeros(int(m.sum())),
                             nu[m] if stochastic else np.zeros(0),
-                            raw["null"][m], raw["seed"][m], n_probe=len(Xp),
+                            raw["matched_null"][m], raw["seed"][m], n_probe=len(Xp),
                             seed=seed, family=family, explainer=name, distance=dname,
                             phi="abs", features="all", eps=eps,
                             patch_mass_source=pm.get("source", np.nan),
                             patch_mass_treat=pm.get("treatment", np.nan),
-                            patch_mass_null=pm.get("null", np.nan),
+                            patch_mass_null=pm.get("matched_null", np.nan),
                             **diag,
                         )
                         rows.append(s.as_dict())

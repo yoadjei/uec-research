@@ -66,7 +66,7 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
 
             if key not in cache_by_env:
                 cache_by_env[key] = build_checkpoints(
-                    src, tgt, seed, n_source, n_update, cfg, ucfg, regimes=("null", "seed")
+                    src, tgt, seed, n_source, n_update, cfg, ucfg, regimes=("matched_null", "seed")
                 )
             shared = cache_by_env[key]
             ck = dict(shared)
@@ -77,7 +77,7 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
                 )
             )
 
-            assert operator_signature(ck["null"][1]) == operator_signature(ck["treatment"][1])
+            assert operator_signature(ck["matched_null"][1]) == operator_signature(ck["treatment"][1])
 
             rng = np.random.default_rng(500 + seed)
             probe = shared_support_probe(src, tgt, n_probe, rng)
@@ -88,7 +88,7 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
             models = {k: v[0] for k, v in ck.items()}
             p0 = probabilities(f0, probe)
             p_treat = probabilities(models["treatment"], probe)
-            p_null = probabilities(models["null"], probe)
+            p_null = probabilities(models["matched_null"], probe)
 
             Xa, ya = src.sample(4000, rng)
             Xb, yb = tgt.sample(4000, rng)
@@ -96,11 +96,11 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
                 "acc_source_src": accuracy(f0, Xa, ya),
                 "acc_treat_tgt": accuracy(models["treatment"], Xb, yb),
                 "acc_treat_src": accuracy(models["treatment"], Xa, ya),
-                "acc_null_src": accuracy(models["null"], Xa, ya),
+                "acc_null_src": accuracy(models["matched_null"], Xa, ya),
                 "ece_source": expected_calibration_error(f0, Xa, ya),
                 "ece_treat": expected_calibration_error(models["treatment"], Xb, yb),
                 "agree_treat": agreement_rate(f0, models["treatment"], probe),
-                "agree_null": agreement_rate(f0, models["null"], probe),
+                "agree_null": agreement_rate(f0, models["matched_null"], probe),
             }
 
             attrs = {
@@ -128,7 +128,7 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
                             raw = {
                                 "delta": change(A0, attrs["treatment"][(name, 0)], phi, dist, feats),
                                 "nu": change(A0, A0b, phi, dist, feats),
-                                "rho_null": change(A0, attrs["null"][(name, 0)], phi, dist, feats),
+                                "rho_null": change(A0, attrs["matched_null"][(name, 0)], phi, dist, feats),
                                 "rho_seed": change(A0, attrs["seed"][(name, 0)], phi, dist, feats),
                                 "delta_scratch": change(
                                     A0, attrs["scratch"][(name, 0)], phi, dist, feats
