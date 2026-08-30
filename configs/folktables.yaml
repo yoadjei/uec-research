@@ -1,0 +1,13 @@
+# ACS Income, real-data demonstration (paper section 7.8).
+runner: experiments/run_folktables.py
+source: CA
+targets: [MI, MS, SD, PR]
+year: '2018'
+seeds: 10
+n_source: 20000
+n_update: 4000          # capped per target by matched_update_size(); SD supplies 4899
+n_probe: 800
+n_probe_small: 120
+update_epochs: [2, 20]
+update_lr: 0.0002
+tau: 0.75               # log density ratio window for the shared-support screen

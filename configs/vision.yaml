@@ -1,0 +1,16 @@
+# CIFAR-10 sanity check (paper section 7.9). Not a benchmark.
+runner: experiments/run_vision.py
+seeds: 3
+families: [corruption, shortcut]
+explainers: [integrated_gradients, gradient_x_input, grad_cam, saliency]
+n_source: 10000
+n_update: 4000
+n_probe: 250
+width: 16
+blocks: [1, 1, 1]
+epochs: 15
+update_epochs: 1
+lr: 0.002
+update_lr: 0.0002
+batch: 128
+replay: -1              # -1 = full source replay; without it the update is domain replacement

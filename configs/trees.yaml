@@ -1,0 +1,12 @@
+# XGBoost + exact TreeSHAP, retrain-only regime (paper section 7.8c).
+runner: experiments/run_trees.py
+seeds: 10
+families: [none, covariate, concept, shortcut]
+magnitude: 1.5
+n_source: 8000
+n_update: 4000
+n_probe: 500
+n_estimators: 200
+max_depth: 4
+learning_rate: 0.1
+subsample: 0.8

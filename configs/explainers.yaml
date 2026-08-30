@@ -1,0 +1,19 @@
+# Explainer hyperparameters. Values are the function defaults in src/uec/explain/.
+integrated_gradients:
+  n_steps: 64
+  baseline: zeros       # fixed across checkpoints; a per-checkpoint baseline makes dIG meaningless
+expected_gradients:
+  n_samples: 32         # noise-dominated at this budget; reported as a finding, not hidden
+smoothgrad:
+  sigma: 0.15
+  n_samples: 32
+kernel_shap:
+  nsamples: 128
+  background: 25
+lime:
+  num_samples: 1500
+  kernel_width: null    # lime default
+tree_shap:
+  exact: true
+grad_cam:
+  layer: final_stage

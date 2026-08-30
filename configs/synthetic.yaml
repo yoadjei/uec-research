@@ -1,0 +1,14 @@
+# Canonical settings for the headline synthetic experiment (paper section 7.2, figures 1-7).
+# Runners take CLI arguments; this file records what was actually run, and
+# tests/test_configs.py asserts it matches the runner defaults so it cannot drift.
+runner: experiments/run_synthetic.py
+seeds: 10
+families: [none, covariate, concept, shortcut]
+magnitude: 1.5          # 10% shared-support overlap; see docs/spec.md 8b
+n_source: 8000
+n_update: 4000
+n_probe: 500
+n_probe_small: 100      # KernelSHAP and LIME are quadratic in cost
+epochs: 60              # source training
+update_epochs: 2        # light update: agreement 0.98, largest effect
+update_lr: 0.0002
