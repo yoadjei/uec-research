@@ -26,6 +26,11 @@ The sharpest demonstration is a no-shift placebo: on gradient-boosted trees with
 where nothing whatsoever has shifted, the matched null correctly reports a ratio of 0.98 while the
 seed floor reports 1.90 — manufacturing a near-two-fold effect out of nothing.
 
+We then apply the missing control to a published audit. Re-running Delta-Audit's 45 reported
+settings with a matched null, 64% of them produce attribution movement *smaller* than refitting the
+same model on a resample of the same data, and only 33% clear that floor — although their own
+flagship examples survive it comfortably.
+
 Two further results follow. First, the magnitude of attribution change is **uninformative about
 legitimacy**: for six of seven explainers, change relative to the matched null is statistically
 indistinguishable between a shift that leaves the Bayes-optimal predictor untouched and one that
@@ -424,6 +429,55 @@ measuring a quantity that cannot express the distinction. UEC assigns opposite s
 ROS behaves as the theory predicts: its mean swings from 2.03 to 4.81 to 0.49 across update strengths
 with no interpretable pattern, because its denominator vanishes in exactly the prediction-preserving
 regime the paper is about.
+
+### 7.5b Re-auditing a published result (T11)
+
+The argument so far is methodological. This section makes it concrete by applying the missing
+control to a published audit.
+
+Delta-Audit (Hemmat & Fatemi 2025) reports 45 settings — five classical learner families × three UCI
+datasets × three A/B configuration pairs — differencing occlusion attributions and flagging movement
+uncorrelated with behaviour change as "risky reliance redistribution". Their setting contains no
+distribution shift at all: A and B differ in hyperparameters, on identical data. The question their
+design cannot ask is what their own procedure produces when *nothing* changes.
+
+We reimplement their attribution (occlusion in standardised space against a class-anchored margin,
+averaged over mean and median baselines) and their reported quantities (movement, JSD
+redistribution, rank-overlap@10, behaviour–attribution coupling), then add one thing: a matched
+null in which the *same* learner with the *same* hyperparameters is refit on a bootstrap resample of
+the *same* training data. Nothing about the specification or the distribution changes. Whatever
+attribution movement that produces is the floor their flagged movement has to clear.
+
+**Across their 45 settings, 15 (33%) clear the floor and 29 (64%) fall below it; the median ratio of
+reported movement to resample floor is 0.861.** Their JSD measure gives the same verdict
+independently (median ratio 0.797, 29/45 below floor).
+
+| learner family | clears the floor | median ratio |
+|---|---|---|
+| Random Forest | **1 / 9** | 0.89 |
+| kNN | 3 / 9 | 0.52 |
+| Logistic Regression | 3 / 9 | 0.86 |
+| Gradient Boosting | 4 / 9 | 0.62 |
+| SVC | 4 / 9 | 0.92 |
+
+Two things must be said in their favour. Their reimplemented **flagship examples survive**: SVC
+poly→rbf on Breast Cancer gives a ratio of 3.90 and gradient boosting depth 3→6 gives 1.59, both
+clearing the floor decisively. And the cases they themselves label cosmetic are confirmed cosmetic —
+SVC gamma=scale→auto produces a ratio of exactly 0.00 on two of three datasets, reproducing their
+own reported rank-overlap of 1.0. Our reimplementation agrees with them where they make claims.
+
+The problem is the rest of the grid, and the Random Forest rows show it most clearly. `depth=None →
+depth=3` on Breast Cancer produces a movement of 0.343 — large, and a practitioner reading it would
+conclude the depth change substantially reallocated the model's reliance. Refitting the *same*
+forest on a resample of the same data moves attributions by 0.349, and the difference is not
+significant (p = 0.56). `sqrt → log2` on the same data produces 0.315 against the same 0.349 floor,
+significantly **below** it.
+
+The conclusion is narrow and we state it narrowly: Delta-Audit's method is not wrong, and its
+headline findings survive. But without a matched control, roughly two-thirds of the settings in a
+published attribution audit report movement that cannot be distinguished from — and is usually
+smaller than — what resampling the training data produces at fixed configuration. That is the cost
+of the missing control, measured on someone else's grid rather than argued on ours.
 
 ### 7.6 H4: the method-class asymmetry (Fig. 5, T7)
 
