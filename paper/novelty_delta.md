@@ -113,7 +113,7 @@ reference.
 
 Independent evidence for the premise of our Proposition 3 remark: models behave anomalously on
 ablated, off-manifold inputs, and that anomaly is a property of the output space. MCal corrects it
-within one model; we *measure* the deviation **between two checkpoints** (`ε_coal`, median 1.5–2.0×
+within one model; we *measure* the deviation **between two checkpoints** (`ε_coal`, median 1.4–1.9×
 the data-level gap, §7.6), which is what governs whether Shapley stability can be inferred from
 prediction stability. Not in MCal.
 
