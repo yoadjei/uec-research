@@ -22,13 +22,21 @@ at all, and most of the attribution movement reported after a model update is at
 optimisation rather than to the new data. Unwarranted change is largest for *light* updates, where
 predictions are best preserved.
 
+The sharpest demonstration is a no-shift placebo: on gradient-boosted trees with exact TreeSHAP,
+where nothing whatsoever has shifted, the matched null correctly reports a ratio of 0.98 while the
+seed floor reports 1.90 — manufacturing a near-two-fold effect out of nothing.
+
 Two further results follow. First, the magnitude of attribution change is **uninformative about
 legitimacy**: for six of seven explainers, change relative to the matched null is statistically
 indistinguishable between a shift that leaves the Bayes-optimal predictor untouched and one that
 rewrites it, and two published metrics consequently rank correct adaptation as 45% and 89% *worse*
 than unwarranted drift. Second, the monitored quantity that does correlate with unwarranted change
 points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
-accuracy's association reverses sign across shift magnitudes. We accompany this with three propositions establishing which
+accuracy's association reverses sign across shift magnitudes.
+
+The phenomenon holds across MLPs, gradient-boosted trees, and a small CIFAR ResNet, and across seven
+attribution methods including exact TreeSHAP, so it is neither a gradient artefact nor a property of
+one model class. We accompany this with three propositions establishing which
 explainer classes inherit stability from prediction stability: completeness pins the *aggregate*
 attribution mass of path-integrated explainers to within the output change, local-gradient
 explainers inherit no such bound even in aggregate, and Shapley-type explainers are bounded only
@@ -484,6 +492,35 @@ example of §7.7's point: an association between unwarranted change and a monito
 invert once the shift magnitude is controlled, so marginal correlations in this setting should not
 be read causally — including ours.
 
+### 7.8c A non-differentiable model class, and the sharpest test of the control (T10)
+
+Everything above uses differentiable models and mostly gradient-based explainers, so the phenomenon
+could be an artefact of either. Gradient-boosted trees with **exact TreeSHAP** rule that out. Trees
+are not fine-tuned, so the update operator is a full retrain — which makes the matched null exact
+rather than approximate (identical hyperparameters and sample size for both arms, differing only in
+the sampling distribution) and gives `ν = 0` by construction.
+
+| shift | ω | Δ/ρ_null [95% CI] | Δ/ρ_seed | p | Cliff's δ |
+|---|---|---|---|---|---|
+| **none (placebo)** | 0 | **0.98 [0.95, 1.02]** | **1.90** | 0.43 (n.s.) | −0.24 |
+| covariate | 0 | **2.08 [2.00, 2.17]** | 4.01 | 0.002 | +1.00 |
+| shortcut | 0.238 | 1.61 [1.54, 1.68] | 3.32 | 0.002 | +1.00 |
+| concept | 0.117 | 1.16 [1.10, 1.24] | 2.22 | 0.002 | +1.00 |
+
+The effect is *larger* than for any differentiable model (2.08 versus 1.4–1.7), so it is not a
+gradient artefact, and it survives on the collinearity-reliable partition (2.10).
+
+**The placebo row is the paper's sharpest single result.** With no shift whatsoever, the matched
+null correctly reports 0.98 and no significance. The seed floor — the control implicit in the
+retraining literature — reports **1.90×** on the very same checkpoints. It manufactures a
+near-two-fold "shift effect" out of a condition in which nothing shifted.
+
+Note also that the two floors invert between model classes. For MLPs under light fine-tuning the
+seed floor is far *larger* than the matched null (0.20 versus 0.025), so it understates the effect;
+for trees under retraining it is far *smaller* (0.11 versus 0.21), so it overstates it. The seed
+floor is not conservative in a known direction — it is simply the wrong control, and which way it
+misleads depends on the model class and the update operator.
+
 ### 7.9 Vision sanity check (T9, Fig. 9)
 
 CIFAR-10, a 78k-parameter ResNet, 3 seeds, additive update (the model is fine-tuned on its old data
@@ -541,8 +578,9 @@ attribution, a full sign flip of the mechanism registers as 1 − ρ_s = 0.002.
 2. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
-3. **Scale.** MLPs, gradient-boosted-scale tabular data, and a small CIFAR ResNet on CPU. Nothing
-   here is evidence about LLMs or large vision transformers.
+3. **Scale.** MLPs, gradient-boosted trees, and a 78k-parameter CIFAR ResNet, all on CPU.
+   Nothing here is evidence about LLMs or large vision transformers, and the fine-tuning-stability
+   literature gives reason to think optimisation transients change qualitatively with scale.
 4. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
 5. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
    ratios are uninformative rather than null, and larger sample budgets would change them.
