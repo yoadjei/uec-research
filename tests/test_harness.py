@@ -47,7 +47,7 @@ def test_different_seed_gives_different_weights():
 def test_matched_null_shares_the_operator_with_the_treatment():
     """Guards spec D2: the null and the treatment differ only in the sampling distribution."""
     _, _, ck = _checkpoints("covariate")
-    assert operator_signature(ck["null"][1]) == operator_signature(ck["treatment"][1])
+    assert operator_signature(ck["matched_null"][1]) == operator_signature(ck["treatment"][1])
 
 
 def test_source_model_learns():
@@ -100,10 +100,10 @@ def test_regime_subsets_are_independent_of_build_order():
     silently made the placebo treatment identical to the null."""
     src, tgt = make_pair("none")
     full = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG)
-    part_a = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG, regimes=("null",))
+    part_a = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG, regimes=("matched_null",))
     part_b = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG, regimes=("treatment",))
 
-    for name, part in (("null", part_a), ("treatment", part_b)):
+    for name, part in (("matched_null", part_a), ("treatment", part_b)):
         assert checkpoint_hash(part[name][0].state_dict()) == checkpoint_hash(
             full[name][0].state_dict()
         ), name
@@ -114,7 +114,7 @@ def test_placebo_treatment_differs_from_the_null():
     differ from the null while being statistically exchangeable with it."""
     src, tgt = make_pair("none")
     ck = build_checkpoints(src, tgt, 0, N_SOURCE, N_UPDATE, CFG, UCFG)
-    assert checkpoint_hash(ck["null"][0].state_dict()) != checkpoint_hash(
+    assert checkpoint_hash(ck["matched_null"][0].state_dict()) != checkpoint_hash(
         ck["treatment"][0].state_dict()
     )
 

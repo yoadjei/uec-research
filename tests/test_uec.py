@@ -144,3 +144,19 @@ def test_ratio_ci_is_paired():
     r, lo, hi = ratio_ci(num, den, n_boot=2000)
     assert lo < r < hi
     assert lo > 1.0
+
+
+def test_registry_regime_survives_a_csv_round_trip(tmp_path):
+    """`null` is in pandas' default NA list: a regime by that name reads back as NaN and every
+    matched-null row silently disappears for anyone reproducing from the registry."""
+    import pandas as pd
+
+    from uec.train.harness import STREAM
+
+    assert "null" not in STREAM, "regime label 'null' round-trips as NaN"
+
+    path = tmp_path / "registry.csv"
+    pd.DataFrame({"regime": list(STREAM) + ["seed"]}).to_csv(path, index=False)
+    back = pd.read_csv(path)
+    assert back.regime.isna().sum() == 0
+    assert set(back.regime) == set(STREAM) | {"seed"}
