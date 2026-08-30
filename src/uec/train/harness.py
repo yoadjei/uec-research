@@ -25,6 +25,7 @@ class TrainConfig:
     epochs: int = 60
     batch_size: int = 256
     weight_decay: float = 1e-5
+    device: str = "cpu"
 
 
 @dataclass(frozen=True)
@@ -34,10 +35,14 @@ class UpdateConfig:
     batch_size: int = 256
     weight_decay: float = 1e-5
     freeze_layers: int = 0
+    device: str = "cpu"
 
 
-def _fit(model, X, y, lr, epochs, batch_size, weight_decay, seed, freeze_layers=0):
+def _fit(model, X, y, lr, epochs, batch_size, weight_decay, seed, freeze_layers=0, device="cpu"):
+    """The batch order is drawn on CPU whatever the device, so a run on GPU sees the same sequence
+    of minibatches as the same run on CPU. Only the arithmetic moves."""
     seed_everything(seed)
+    model.to(device)
     params = list(model.parameters())
     if freeze_layers:
         for p in params[: 2 * freeze_layers]:
@@ -47,14 +52,14 @@ def _fit(model, X, y, lr, epochs, batch_size, weight_decay, seed, freeze_layers=
         [p for p in model.parameters() if p.requires_grad], lr=lr, weight_decay=weight_decay
     )
     loss_fn = nn.BCEWithLogitsLoss()
-    Xt = torch.as_tensor(X, dtype=torch.float32)
-    yt = torch.as_tensor(y, dtype=torch.float32)
+    Xt = torch.as_tensor(X, dtype=torch.float32).to(device)
+    yt = torch.as_tensor(y, dtype=torch.float32).to(device)
     g = torch.Generator().manual_seed(seed)
 
     model.train()
     steps = 0
     for _ in range(epochs):
-        order = torch.randperm(len(Xt), generator=g)
+        order = torch.randperm(len(Xt), generator=g).to(device)
         for i in range(0, len(order), batch_size):
             idx = order[i : i + batch_size]
             opt.zero_grad(set_to_none=True)
@@ -71,17 +76,18 @@ def _fit(model, X, y, lr, epochs, batch_size, weight_decay, seed, freeze_layers=
 def train_source(X, y, cfg: TrainConfig, seed: int):
     seed_everything(seed)
     model = MLP(X.shape[1], cfg.hidden, cfg.activation)
-    steps = _fit(model, X, y, cfg.lr, cfg.epochs, cfg.batch_size, cfg.weight_decay, seed)
-    return model, {"n_train": len(X), "n_steps": steps, "lr": cfg.lr, "epochs": cfg.epochs}
+    steps = _fit(model, X, y, cfg.lr, cfg.epochs, cfg.batch_size, cfg.weight_decay, seed,
+                 device=cfg.device)
+    return model.cpu(), {"n_train": len(X), "n_steps": steps, "lr": cfg.lr, "epochs": cfg.epochs}
 
 
 def update(model, X, y, ucfg: UpdateConfig, seed: int):
     child = copy.deepcopy(model)
     steps = _fit(
         child, X, y, ucfg.lr, ucfg.epochs, ucfg.batch_size, ucfg.weight_decay, seed,
-        ucfg.freeze_layers,
+        ucfg.freeze_layers, device=ucfg.device,
     )
-    return child, {"n_train": len(X), "n_steps": steps, "lr": ucfg.lr, "epochs": ucfg.epochs}
+    return child.cpu(), {"n_train": len(X), "n_steps": steps, "lr": ucfg.lr, "epochs": ucfg.epochs}
 
 
 def operator_signature(meta: dict) -> tuple:
