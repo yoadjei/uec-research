@@ -734,14 +734,31 @@ Five further axes, 5 seeds each. Every configuration gives a ratio above 1; what
 
 | axis | variants | ratio (IG) |
 |---|---|---|
-| architecture width | 32 / 64 / 128 hidden units | 1.57 / 1.50 / 1.45 |
+| architecture width | 32 → 1024 hidden units (see below) | 1.57 → 1.36 |
 | IG baseline | zeros / source mean / **target mean** | 1.50 / 1.50 / **2.34** |
 | SHAP background | 10 / 25 / 50 samples | 1.46 / 1.46 / 1.47 |
 | LIME kernel width | 0.5 / default / 2.0 | 1.69 / 1.33 / 1.43 |
 | probe sampling | source-only / **shared support** / target-only | 1.23 / **1.50** / 1.81 |
 
-Two of these are worth stating plainly because they concern choices we made ourselves, and in both
-cases **the configuration we chose is the conservative one**.
+**Capacity does not dissolve the effect.** The width axis deserves its own statement because it is
+the cheapest available test of the scale objection. Sweeping the hidden width from 32 to 1024 — a
+**630-fold increase in parameters**, from 1.7k to 1.07M — leaves the ratio essentially where it
+started:
+
+| width | parameters | Grad×Input | IG |
+|---|---|---|---|
+| 32 | 1.7k | 1.72 | 1.57 |
+| 128 | 19k | 1.58 | 1.45 |
+| 512 | 272k | 1.64 | 1.39 |
+| 1024 | 1.07M | 1.56 | 1.36 |
+
+Grad×Input is flat (1.53–1.72 with no trend); IG declines mildly and then plateaus (1.57 → 1.36).
+Neither approaches 1. This does not settle the scale question — these are still MLPs on synthetic
+data — but it removes the specific worry that the phenomenon is an artefact of tiny models, and it
+shows the mild decline visible over 32→128 does not continue.
+
+Two further axes are worth stating plainly because they concern choices we made ourselves, and in
+both cases **the configuration we chose is the conservative one**.
 
 The IG baseline matters: integrating from the *target* mean gives 2.34 against 1.50 from the zero
 vector. We use the zero vector, which is also the source mean here, and it is the smaller number.
