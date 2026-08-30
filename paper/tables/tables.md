@@ -274,6 +274,24 @@
 | shap_background    | 50             | kernel_shap          |  0.0414 |     0.0288 |  1.4715 |          95.8 |
 
 
+## T14_width_scaling
+
+|   width | explainer            |   n_params |   delta |   rho_null |   ratio |   seeds |
+|--------:|:---------------------|-----------:|--------:|-----------:|--------:|--------:|
+|      32 | gradient_x_input     |       1696 |  0.0311 |     0.0192 |  1.7223 |       5 |
+|      32 | integrated_gradients |       1696 |  0.0294 |     0.0198 |  1.5731 |       5 |
+|      64 | gradient_x_input     |       5440 |  0.0414 |     0.0264 |  1.6131 |       5 |
+|      64 | integrated_gradients |       5440 |  0.0399 |     0.0275 |  1.4964 |       5 |
+|     128 | gradient_x_input     |      19072 |  0.0544 |     0.0346 |  1.5799 |       5 |
+|     128 | integrated_gradients |      19072 |  0.0546 |     0.0376 |  1.4486 |       5 |
+|     256 | gradient_x_input     |      70912 |  0.0694 |     0.0453 |  1.5339 |       5 |
+|     256 | integrated_gradients |      70912 |  0.0722 |     0.0502 |  1.4456 |       5 |
+|     512 | gradient_x_input     |     272896 |  0.0829 |     0.0507 |  1.64   |       5 |
+|     512 | integrated_gradients |     272896 |  0.0821 |     0.059  |  1.3939 |       5 |
+|    1024 | gradient_x_input     |    1070080 |  0.1    |     0.0645 |  1.555  |       5 |
+|    1024 | integrated_gradients |    1070080 |  0.0989 |     0.0727 |  1.3601 |       5 |
+
+
 ## T8b_folktables_year
 
 | shift          | explainer         |     nu |   rho_null |   rho_seed |   omega |   delta |   delta_lo |   delta_hi |   ratio |   ratio_lo |   ratio_hi |   ratio_seed |     uec |   uec_lo |   uec_hi |   exceedance |   preserved |   n_seeds |
