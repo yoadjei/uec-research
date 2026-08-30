@@ -60,7 +60,7 @@ def fig_concept(seed=0, magnitude=1.5, explainer="integrated_gradients"):
         if family == "covariate":
             panels.append(("stable: $\\Delta\\approx0=\\omega$", A0, A1,
                            idx[np.argmin(delta[idx])], 0.0))
-            panels.append(("unwarranted: $\\Delta\\gg\\omega=0$", A0, A1,
+            panels.append(("unwarranted: $\\Delta>0=\\omega$", A0, A1,
                            idx[np.argmax(delta[idx])], 0.0))
         else:
             j = idx[np.argmax(omega[idx])] if idx.size else 0
