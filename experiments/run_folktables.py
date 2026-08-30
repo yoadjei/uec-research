@@ -72,6 +72,9 @@ def main():
     ap.add_argument("--source", default="CA")
     ap.add_argument("--targets", nargs="+", default=["MI", "MS", "SD", "PR"])
     ap.add_argument("--year", default="2018")
+    # ACS renamed RELP in 2019, so a year shift drops to the nine cross-year features
+    ap.add_argument("--target-year", default=None,
+                    help="run a year shift (same state, later year) instead of a state shift")
     ap.add_argument("--seeds", type=int, default=10)
     ap.add_argument("--n-source", type=int, default=20000)
     ap.add_argument("--n-update", type=int, default=4000)
@@ -85,13 +88,15 @@ def main():
 
     pin_threads(4)
     cfg = TrainConfig(epochs=40)
-    src = load_acs(a.source, a.year)
+    cross_year = a.target_year is not None
+    src = load_acs(a.source, a.year, cross_year=cross_year)
     scaler = SourceScaler(src.X)
     Xs = scaler(src.X)
     rows = []
 
-    for tgt_state in a.targets:
-        tgt = load_acs(tgt_state, a.year)
+    targets = [a.source] if cross_year else a.targets
+    for tgt_state in targets:
+        tgt = load_acs(tgt_state, a.target_year or a.year, cross_year=cross_year)
         Xt = scaler(tgt.X)
         pr = shared_support_probe(
             Xs, Xt, a.n_probe, np.random.default_rng(0), tau=a.tau, ys=src.y, yt=tgt.y
@@ -121,7 +126,9 @@ def main():
                 )
 
                 diag = {
-                    "target": tgt_state, "update_epochs": ep, "domain_auc": auc,
+                    "target": f"{tgt_state}{a.target_year}" if cross_year else tgt_state,
+                    "shift_kind": "year" if cross_year else "state",
+                    "update_epochs": ep, "domain_auc": auc,
                     "n_update": n_update,
                     "probe_balance": balance, "mech_gap": mech,
                     "acc_src": accuracy(f0, Xs[:20000], src.y[:20000]),
@@ -158,7 +165,7 @@ def main():
                                     raw["treatment"][mask], np.zeros(int(mask.sum())),
                                     nu[mask] if EXPLAINERS[name].stochastic else np.zeros(0),
                                     raw["matched_null"][mask], raw["seed"][mask], n_probe=n,
-                                    seed=seed, family="covariate_state", explainer=name,
+                                    seed=seed, family="covariate_year" if cross_year else "covariate_state", explainer=name,
                                     explainer_family=EXPLAINERS[name].family,
                                     distance=dname, phi="abs", features=feat_name, eps=eps,
                                     **diag,
@@ -169,7 +176,8 @@ def main():
 
     df = pd.DataFrame(rows)
     RESULTS.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(RESULTS / "folktables_metrics.parquet")
+    tag = "folktables_year" if cross_year else "folktables"
+    df.to_parquet(RESULTS / f"{tag}_metrics.parquet")
     print(f"\nwrote {len(df)} rows")
 
 
