@@ -24,6 +24,19 @@ Add `--task vision` as a second run if you have session time left. The script ch
 dependencies and exits immediately with the exact pip command if any are missing, so a typo costs
 seconds rather than a download.
 
+### Getting results back
+
+There is no file transfer out of a Kaggle session, so use the reporter — it runs the arm if
+needed, resumes seeds already on disk, and prints everything in a form you can paste back:
+
+```python
+!python uec-research/kaggle/run_and_report.py
+```
+
+Copy from the first `====` line down. That text contains every column the analysis needs.
+
+### Health check
+
 Watch the per-seed line `probe gap |p0-pt|: ... preserved@0.05=...`. That number is the health
 check: it is the fraction of probe points on which the two checkpoints still agree closely enough
 for the comparison to mean anything. Below 0.15 the script tells you what to change.
