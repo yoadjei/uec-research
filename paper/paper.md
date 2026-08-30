@@ -242,15 +242,237 @@ Cliff's δ compares treatment to null per probe point; Holm corrects across expl
 
 ## 7. Results
 
-*Populated from `paper/tables/tables.md` and `figures/`.*
+All synthetic numbers are 10 seeds, covariate magnitude 1.5 (10% shared-support overlap), a
+2-epoch update at lr 2×10⁻⁴, ε = 0.05, normalised-ℓ₁ distance, unless stated. Intervals are paired
+seed bootstraps. Source: `paper/tables/`, `figures/`.
+
+### 7.1 The controls behave
+
+Prediction agreement on the probe is 0.98 under covariate shift and 0.99 under shortcut removal, so
+the conditioning set is not a rare corner: 79% of probe points are preserved at ε = 0.05.
+
+The noise floor `ν` is exactly 0 for saliency, Grad×Input and IG (bitwise reproducible), 0.016 for
+SmoothGrad, 0.073 for KernelSHAP, 0.056 for LIME, and 0.135 for Expected Gradients. Two of those
+matter. **Expected Gradients is noise-dominated**: its `ν` (0.135) is indistinguishable from its
+matched null (0.138) and from its measured change (0.141), so EG at 32 background samples cannot
+resolve any effect in this setting. **LIME is partly noise-dominated**: `ν` = 0.056 exceeds its
+matched null of 0.030. Both are reported as findings about the explainers, not as failures of the
+estimator — UEC subtracts `max(ν, ρ_null)` and correctly returns ≈ 0 for EG.
+
+The frozen-model check is exact: with a fixed checkpoint, attributions at a fixed input are bitwise
+identical whether the input is drawn from the source or the target distribution (§2.1).
+
+**The placebo passes.** With no shift at all, the treatment is a second draw from the source
+distribution and the ratio is 1.00–1.10 for every explainer, with every interval covering 1
+(EG 1.000 [0.986, 1.014]; IG 1.05; LIME 1.10).
+
+### 7.2 H1: unwarranted change exists (Fig. 2, T2, T3)
+
+Under covariate shift ω is exactly 0, so all measured change on the shared support is unwarranted.
+All seven explainers exceed their matched null, and all seven survive Holm correction:
+
+| explainer | ν | ρ_null | ρ_seed | Δ | ratio [95% CI] | Cliff's δ |
+|---|---|---|---|---|---|---|
+| Saliency | 0.000 | 0.025 | 0.200 | 0.044 | **1.73 [1.58, 1.89]** | +0.98 |
+| SmoothGrad | 0.016 | 0.025 | 0.197 | 0.044 | 1.73 [1.58, 1.89] | +0.98 |
+| Grad×Input | 0.000 | 0.025 | 0.131 | 0.042 | 1.67 [1.49, 1.87] | +0.90 |
+| IG | 0.000 | 0.026 | 0.097 | 0.040 | 1.52 [1.36, 1.71] | +0.90 |
+| KernelSHAP | 0.073 | 0.028 | 0.126 | 0.039 | 1.40 [1.27, 1.55] | +0.88 |
+| LIME | 0.056 | 0.030 | 0.113 | 0.038 | 1.25 [1.14, 1.37] | +0.64 |
+| EG | 0.135 | 0.138 | 0.162 | 0.141 | 1.02 [1.02, 1.03] | +0.48 |
+
+Holm-adjusted p = 0.014 for all seven (the floor of a 10-seed paired Wilcoxon after correcting
+across seven tests). Cliff's δ ≥ 0.88 for five of seven means near-perfect separation across seeds.
+
+### 7.3 H1b: the choice of control reverses the conclusion (Fig. 2b)
+
+This is what the matched null buys. Over a grid of shift magnitude × update strength (600 runs,
+5 seeds), the ratio to the matched null **falls** as the update gets heavier, while the ratio to the
+seed floor **rises**:
+
+| update | Δ/ρ_null (IG, shift 1.5) | Δ/ρ_seed |
+|---|---|---|
+| 1 epoch | **1.81** | 0.11 |
+| 2 epochs | 1.58 | 0.19 |
+| 5 epochs | 1.39 | 0.41 |
+| 20 epochs | 1.28 | 0.82 |
+| 60 epochs | 1.09 | **1.07** |
+
+The two controls order the update regimes in opposite directions, and the curves cross. Read against
+the seed floor — the control implicit in prior work — a heavy update looks like the most
+shift-driven condition; read against the matched null it is the least. The reason is mechanical: the
+seed floor is a fixed quantity while Δ grows with training, so the ratio to it measures *how hard
+you trained*, not *how far the data moved*.
+
+The practical consequence is a claim about the existing literature: **a substantial part of the
+attribution movement reported after fine-tuning is attributable to the optimisation rather than to
+the new distribution**, and no study lacking a matched-operator control can separate the two.
+
+Note also that the effect is largest exactly where predictions are best preserved: at 1 epoch,
+agreement is 0.98 and the ratio is at its maximum. The two desiderata align rather than trade off,
+and light incremental fine-tuning is the realistic deployment regime.
+
+### 7.4 H2: magnitude is uninformative about legitimacy (Fig. 2c, T4)
+
+This is the central result. Compare a shift where the mechanism does not change (covariate, ω = 0)
+with one where it changes a great deal (shortcut removal, ω = 0.326), under the same update:
+
+| explainer | Δ covariate (ω=0) | Δ shortcut (ω=0.33) | paired p |
+|---|---|---|---|
+| IG | 0.0398 | 0.0386 | **0.63** |
+| KernelSHAP | 0.0388 | 0.0415 | 0.23 |
+| Saliency | 0.0436 | 0.0366 | 0.010 |
+| Grad×Input | 0.0419 | 0.0365 | 0.037 |
+
+For IG and KernelSHAP the measured change is **statistically indistinguishable** between the two
+cases. For saliency and Grad×Input it differs — but in the *wrong direction*: they move **more** when
+nothing should change than when everything should. Under a light update the attribution change
+carries essentially no information about whether the underlying mechanism moved.
+
+UEC separates what magnitude cannot: **+0.014 under covariate shift** (unwarranted change present)
+versus **−0.31 under shortcut removal** (the model moved far *less* than warranted).
+
+Two failure modes, not one: **light updates produce change where none is warranted, and fail to
+produce change where it is.**
+
+Does the model ever adapt? Yes, with a stronger update. Ground-truth attribution mass on the
+shortcut feature should fall from 0.337 to 0. The model takes it from 0.261 to 0.226 at 2 epochs
+(13% of the way), 0.060 at 20 epochs (77%), and 0.022 at 100 epochs (92%). Warranted adaptation
+requires a substantial update; unwarranted change appears with a minimal one.
+
+### 7.5 What prior metrics report on the same checkpoints (T4)
+
+At 100 update epochs, where the model has genuinely adapted to the shortcut removal:
+
+| metric | covariate (ω=0, change is **wrong**) | shortcut (ω=0.25, change is **right**) |
+|---|---|---|
+| FASS-style filtered distance | 0.192 | **0.279** |
+| Delta-Audit JSD | 0.045 | **0.087** |
+| Delta-Audit "spurious" residual | 0.080 | **0.151** |
+| ROS (mean) | 4.81 | 1.17 |
+| **UEC** | **+0.015** | **−0.143** |
+
+FASS-style distance and Delta-Audit's spurious residual both rank the *correct* adaptation as worse
+than the *incorrect* drift, by 45% and 89% respectively. They are not miscalibrated; they are
+measuring a quantity that cannot express the distinction. UEC assigns opposite signs.
+
+ROS behaves as the theory predicts: its mean swings from 2.03 to 4.81 to 0.49 across update strengths
+with no interpretable pattern, because its denominator vanishes in exactly the prediction-preserving
+regime the paper is about.
+
+### 7.6 H4: the method-class asymmetry (Fig. 5, T7)
+
+Over 20,000 probe points (10 seeds × 4 shift families × 500 points):
+
+- **Proposition 1(i) holds without exception. Zero violations.** Maximum observed slack 1.00023
+  against a propagated quadrature tolerance of 3.4×10⁻⁴; the identity residual is 0 to 10⁻⁸. The
+  bound is also *tight* — median slack 0.87–0.99 — so it is not vacuous.
+- **Proposition 2 is realised by ordinary fine-tuning.** Grad×Input's aggregate exceeds the same
+  bound on **60.8%** of points (60.5% among prediction-preserved points), with a 90th percentile of
+  1.47–1.62.
+- **Proposition 3's premise fails in the predicted direction, at moderate size.** Coalition-level
+  deviation exceeds data-level deviation by a median factor of 1.5–2.0. The usable bound is
+  therefore ≈ 3ε_data rather than 2ε_data, and it is governed by off-manifold divergence, which
+  prediction preservation does not control. We had predicted "≫" and record the correction.
+
+The practically important row is the one no method class satisfies: rank-order change is large for
+every explainer under every condition. Completeness buys aggregate stability and nothing else.
+
+### 7.7 H3: not invisible, but not usable either (T3b, T3c)
+
+The original hypothesis — that unwarranted change is uncorrelated with the metrics practitioners
+watch — is **partly refuted, and the refutation is worse news than the hypothesis**. Across the
+600-run regime grid:
+
+- Prediction agreement correlates **positively** with the ratio (IG r = +0.22, p < 10⁻⁴;
+  Grad×Input r = +0.27, p < 10⁻⁵). Higher agreement goes with *more* unwarranted change relative to
+  the null — the opposite of the natural inference.
+- Target accuracy's correlation **reverses sign across shift magnitudes** (from +0.44 at magnitude
+  0.75 to −0.31 at magnitude 2.0), so it is not a usable proxy in either direction.
+- Calibration (ECE) shows no consistent association (|r| ≤ 0.16 across explainers).
+
+So a practitioner watching accuracy, calibration and prediction agreement is not merely uninformed
+about unwarranted explanation change; the one signal that does correlate points the wrong way.
+
+### 7.8 Real data (T8, Fig. 8)
+
+ACS Income, source CA 2018, four target states, 10 seeds, light update. The shared-support screen
+works: domain AUC is 0.61–0.72 over the pooled data but 0.55–0.63 within the probe.
+
+Ratios under a 2-epoch update, primary distance: MI 1.53–1.87, MS 1.80–2.12, SD 1.70–1.98,
+PR 1.44–1.75, with Cliff's δ = +1.00 (perfect separation across seeds) for most explainers, and EG
+again pinned at ≈ 1.0 by its own noise. The synthetic pattern replicates in direction and magnitude.
+
+ω is not computable here, so no change on real data is labelled warranted. The calibration-transfer
+check (`mech_gap`) is reported as a *necessary-not-sufficient* screen on the covariate-shift null.
 
 ## 8. Ablations
 
-*Populated from `paper/tables/T5_ablations.csv`.*
+The conclusion does not depend on any of the arbitrary choices (T5). Kendall τ between the
+explainer ranking under the primary configuration and under each alternative:
+
+| axis | variants | τ vs primary |
+|---|---|---|
+| distance | Spearman, cosine, ℓ₁ | **1.00** |
+| distance | top-k (k = 3, 10) | 0.62, 0.91 |
+| ε | 0.01, 0.02, 0.05, 0.10 | **1.00** (mean ratio 1.47 → 1.53) |
+| φ | absolute, signed | **1.00** |
+| feature set | all, collinearity-reliable | **1.00** |
+
+Two ablations deserve comment.
+
+**Collinearity does not explain the effect — it suppresses it.** On the collinearity-reliable feature
+partition (Attribution Impossibility Z ≥ 1.96), the mean ratio *rises* from 1.50 to 1.92. Removing
+the features whose rankings are provably unreliable makes the effect larger, not smaller.
+
+**Top-k Jaccard can be blind to warranted change by construction.** When the reference is supported
+on exactly k features, the top-k set cannot move: ω measured by top-5 Jaccard is identically 0 under
+our concept shift, while ℓ₁ gives 0.11 and top-3 gives 0.16. This is why k is an ablation axis and
+why rank-based distances are not the primary choice here — with 15 of 20 features carrying zero
+attribution, a full sign flip of the mechanism registers as 1 − ρ_s = 0.002.
 
 ## 9. Limitations
 
+1. **ω is exact only where the generative process is known.** On real data we claim only the
+   covariate null and check it with a calibration-transfer screen that is necessary, not sufficient.
+   A reviewer is right that real-data legitimacy is not verifiable; that is why the real-data section
+   reports Δ and floors and declines to label.
+2. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
+   Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
+   shift — precisely the regime practitioners most worry about.
+3. **Scale.** MLPs, gradient-boosted-scale tabular data, and a small CIFAR ResNet on CPU. Nothing
+   here is evidence about LLMs or large vision transformers.
+4. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
+5. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
+   ratios are uninformative rather than null, and larger sample budgets would change them.
+6. **The update operator is a plain Adam fine-tune.** We ablate learning rate and epochs but not
+   optimiser family, regularisation, or replay.
+7. **`ω` compares the Bayes predictor's IG to a model's IG.** Both are IG with a common baseline, so
+   the comparison is like-for-like, but a model that is not close to Bayes-optimal will show change
+   relative to a reference it was never going to match.
+
 ## 10. Conclusion
+
+Explanations move when models are updated, and the field has been measuring that movement without a
+reference for how much movement was called for and without a control for how much would have
+happened anyway. Supplying both changes what the measurements mean.
+
+With a warranted-change reference, the magnitude of attribution change turns out to carry almost no
+information about whether the underlying mechanism moved: under a light update, integrated gradients
+change by the same amount whether the Bayes-optimal predictor is unchanged or has been rewritten.
+With a matched-operator control, a large part of the movement attributed to distribution shift in
+prior work is revealed as the ordinary effect of continued training — and the control that prior work
+implicitly uses orders the regimes backwards.
+
+The theory says why no better attribution method fixes this. Completeness pins the aggregate
+attribution mass of path-integrated explainers to the output change, and pins nothing else; local
+gradients inherit nothing even in aggregate; Shapley values are bounded only off the data manifold
+where nothing constrains them. The allocation across features — the only part anyone reads — carries
+no stability guarantee in any class.
+
+For practice the recommendation is narrow and, we think, defensible: do not read attribution change
+across a model update without a matched-operator null, and do not interpret its magnitude as
+evidence about the model's reasoning having changed for a reason.
 
 ---
 
