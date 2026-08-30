@@ -36,6 +36,17 @@ from uec.train.harness import TrainConfig, UpdateConfig, agreement_rate, train_s
 EPS_GRID = [0.01, 0.02, 0.05, 0.10]
 
 
+def matched_update_size(Xs, Xt, n_source, requested):
+    """The update size the *smaller* domain can supply.
+
+    Small target states (SD has 4899 rows) cannot supply the requested update set. Silently
+    shrinking only the treatment would break the matched-operator guarantee -- the null would train
+    on more data and more steps than the treatment, and the ratio would measure that instead of the
+    shift. Both arms use this size.
+    """
+    return int(min(requested, len(Xs) - n_source, len(Xt)))
+
+
 def build(Xs, ys, Xt, yt, seed, n_source, n_update, cfg, ucfg):
     """Same operator for the null and the treatment; only the sampling domain differs."""
     rs = np.random.default_rng([seed, 0])
@@ -44,11 +55,11 @@ def build(Xs, ys, Xt, yt, seed, n_source, n_update, cfg, ucfg):
 
     rn = np.random.default_rng([seed, 1])
     rest = np.setdiff1d(np.arange(len(Xs)), i_src)
-    i_null = rn.choice(rest, min(n_update, len(rest)), replace=False)
+    i_null = rn.choice(rest, n_update, replace=False)
     f_null, meta_n = update(f0, Xs[i_null], ys[i_null], ucfg, seed + 1)
 
     rt = np.random.default_rng([seed, 2])
-    i_tgt = rt.choice(len(Xt), min(n_update, len(Xt)), replace=False)
+    i_tgt = rt.choice(len(Xt), n_update, replace=False)
     f_treat, meta_t = update(f0, Xt[i_tgt], yt[i_tgt], ucfg, seed + 1)
 
     f_seed, _ = train_source(Xs[i_src], ys[i_src], cfg, seed + 5000)
@@ -90,11 +101,14 @@ def main():
         print(f"\n{a.source}->{tgt_state}: domain auc={auc:.3f} probe balance={balance:.3f} "
               f"n_src={len(Xs)} n_tgt={len(Xt)}", flush=True)
 
+        n_update = matched_update_size(Xs, Xt, a.n_source, a.n_update)
+        print(f"  matched update size: {n_update}", flush=True)
+
         for seed in range(a.seeds):
             for ep in a.update_epochs:
                 t0 = time.time()
                 ucfg = UpdateConfig(lr=a.update_lr, epochs=ep)
-                ck, _ = build(Xs, src.y, Xt, tgt.y, seed, a.n_source, a.n_update, cfg, ucfg)
+                ck, _ = build(Xs, src.y, Xt, tgt.y, seed, a.n_source, n_update, cfg, ucfg)
                 f0 = ck["source"]
 
                 p0 = probabilities(f0, probe)
@@ -108,6 +122,7 @@ def main():
 
                 diag = {
                     "target": tgt_state, "update_epochs": ep, "domain_auc": auc,
+                    "n_update": n_update,
                     "probe_balance": balance, "mech_gap": mech,
                     "acc_src": accuracy(f0, Xs[:20000], src.y[:20000]),
                     "acc_src_on_tgt": accuracy(f0, Xt[:20000], tgt.y[:20000]),
