@@ -213,6 +213,80 @@
 | shortcut   | Saliency          |    0 |     0.123  |     0.4256 |       0 |  0.1417 |     0.1337 |     0.1522 |  1.1517 |     1.1025 |     1.1933 |       0.3331 | 0.0187 |   0.0129 |   0.0247 |       0.4138 |      0.3853 |         3 |
 
 
+## T11_reaudit
+
+| family   |   settings |   clears_floor |   below_floor |   median_ratio |
+|:---------|-----------:|---------------:|--------------:|---------------:|
+| gb       |          9 |              4 |             5 |         0.616  |
+| knn      |          9 |              3 |             6 |         0.5182 |
+| logreg   |          9 |              3 |             5 |         0.86   |
+| rf       |          9 |              1 |             8 |         0.889  |
+| svc      |          9 |              4 |             5 |         0.9216 |
+| ALL      |         45 |             15 |            29 |         0.8609 |
+
+
+## T12_budget
+
+| explainer          |   budget |     nu |   rho_null |   ratio |   nu_over_rho |   resolvable |   seconds |
+|:-------------------|---------:|-------:|-----------:|--------:|--------------:|-------------:|----------:|
+| expected_gradients |       32 | 0.1536 |     0.157  |  1.0365 |        0.978  |       1      |    0.1928 |
+| expected_gradients |      128 | 0.0843 |     0.0946 |  1.0485 |        0.8933 |       1      |    0.7102 |
+| expected_gradients |      512 | 0.044  |     0.0562 |  1.1905 |        0.7882 |       1      |    3.6736 |
+| kernel_shap        |      128 | 0.0795 |     0.034  |  1.3628 |        2.3887 |       0      |    2.1713 |
+| kernel_shap        |      512 | 0.0337 |     0.0339 |  1.3663 |        1.0149 |       0.3333 |    4.6763 |
+| kernel_shap        |     2048 | 0.0165 |     0.0339 |  1.3718 |        0.4993 |       1      |   13.9251 |
+| lime               |     1500 | 0.0639 |     0.0344 |  1.3738 |        1.8574 |       0      |    1.8494 |
+| lime               |     5000 | 0.0356 |     0.0347 |  1.3633 |        1.0259 |       0.3333 |    3.2864 |
+| lime               |    15000 | 0.0216 |     0.0348 |  1.3576 |        0.621  |       1      |   12.142  |
+| smoothgrad         |       32 | 0.0161 |     0.0294 |  1.5811 |        0.5622 |       1      |    0.1806 |
+| smoothgrad         |      128 | 0.0083 |     0.0294 |  1.5829 |        0.289  |       1      |    0.7222 |
+| smoothgrad         |      512 | 0.0041 |     0.0294 |  1.5859 |        0.144  |       1      |    2.8388 |
+
+
+## T13_ablations_extra
+
+| axis               | value          | explainer            |   delta |   rho_null |   ratio |   n_preserved |
+|:-------------------|:---------------|:---------------------|--------:|-----------:|--------:|--------------:|
+| architecture_width | 128            | gradient_x_input     |  0.0544 |     0.0346 |  1.5799 |         216   |
+| architecture_width | 128            | integrated_gradients |  0.0546 |     0.0376 |  1.4486 |         216   |
+| architecture_width | 32             | gradient_x_input     |  0.0311 |     0.0192 |  1.7223 |         264.2 |
+| architecture_width | 32             | integrated_gradients |  0.0294 |     0.0198 |  1.5731 |         264.2 |
+| architecture_width | 64             | gradient_x_input     |  0.0414 |     0.0264 |  1.6131 |         236.4 |
+| architecture_width | 64             | integrated_gradients |  0.0399 |     0.0275 |  1.4964 |         236.4 |
+| frozen_layers      | 0              | gradient_x_input     |  0.0414 |     0.0264 |  1.6131 |         236.4 |
+| frozen_layers      | 0              | integrated_gradients |  0.0399 |     0.0275 |  1.4964 |         236.4 |
+| frozen_layers      | 1              | gradient_x_input     |  0.0262 |     0.0164 |  1.6877 |         265.8 |
+| frozen_layers      | 1              | integrated_gradients |  0.0243 |     0.0161 |  1.6033 |         265.8 |
+| ig_baseline        | source_mean    | integrated_gradients |  0.04   |     0.0275 |  1.4981 |         236.4 |
+| ig_baseline        | target_mean    | integrated_gradients |  0.0635 |     0.0273 |  2.3356 |         236.4 |
+| ig_baseline        | zeros          | integrated_gradients |  0.0399 |     0.0275 |  1.4964 |         236.4 |
+| lime_kernel_width  | 0.5            | lime                 |  0.0167 |     0.0114 |  1.6898 |          95.8 |
+| lime_kernel_width  | 2.0            | lime                 |  0.0416 |     0.0296 |  1.4337 |          95.8 |
+| lime_kernel_width  | None           | lime                 |  0.0409 |     0.0315 |  1.3343 |          95.8 |
+| probe_sampling     | shared_support | gradient_x_input     |  0.0414 |     0.0264 |  1.6131 |         236.4 |
+| probe_sampling     | shared_support | integrated_gradients |  0.0399 |     0.0275 |  1.4964 |         236.4 |
+| probe_sampling     | source_only    | gradient_x_input     |  0.0333 |     0.0272 |  1.2482 |         275.6 |
+| probe_sampling     | source_only    | integrated_gradients |  0.0347 |     0.0289 |  1.2328 |         275.6 |
+| probe_sampling     | target_only    | gradient_x_input     |  0.0494 |     0.0252 |  1.9944 |         219   |
+| probe_sampling     | target_only    | integrated_gradients |  0.0468 |     0.0261 |  1.8148 |         219   |
+| shap_background    | 10             | kernel_shap          |  0.0393 |     0.0276 |  1.4606 |          95.8 |
+| shap_background    | 25             | kernel_shap          |  0.0399 |     0.0282 |  1.458  |          95.8 |
+| shap_background    | 50             | kernel_shap          |  0.0414 |     0.0288 |  1.4715 |          95.8 |
+
+
+## T8b_folktables_year
+
+| shift          | explainer         |     nu |   rho_null |   rho_seed |   omega |   delta |   delta_lo |   delta_hi |   ratio |   ratio_lo |   ratio_hi |   ratio_seed |     uec |   uec_lo |   uec_hi |   exceedance |   preserved |   n_seeds |
+|:---------------|:------------------|-------:|-----------:|-----------:|--------:|--------:|-----------:|-----------:|--------:|-----------:|-----------:|-------------:|--------:|---------:|---------:|-------------:|------------:|----------:|
+| covariate_year | EG                | 0.1451 |     0.1066 |     0.1598 |       0 |  0.1551 |     0.1526 |     0.1576 |  1.4549 |     1.218  |     1.8034 |       0.9734 |  0.0086 |   0.0048 |   0.0125 |       0.1055 |      0.6989 |        10 |
+| covariate_year | Grad$\times$Input | 0      |     0.0454 |     0.1196 |       0 |  0.0521 |     0.0398 |     0.0646 |  1.1474 |     1.0552 |     1.2603 |       0.4462 |  0.0067 |   0.0028 |   0.0106 |       0.153  |      0.6989 |        10 |
+| covariate_year | IG                | 0      |     0.0399 |     0.0825 |       0 |  0.0449 |     0.0347 |     0.0553 |  1.1262 |     1.0122 |     1.2811 |       0.5728 |  0.005  |   0.0005 |   0.0102 |       0.1589 |      0.6989 |        10 |
+| covariate_year | KernelSHAP        | 0.0098 |     0.0364 |     0.0544 |       0 |  0.0445 |     0.0352 |     0.054  |  1.2223 |     1.0917 |     1.3986 |       0.8557 |  0.0081 |   0.0037 |   0.0131 |       0.3616 |      0.7221 |        10 |
+| covariate_year | LIME              | 0.0281 |     0.0282 |     0.0406 |       0 |  0.0331 |     0.0262 |     0.0404 |  1.1772 |     1.0209 |     1.3744 |       0.9176 | -0.0023 |  -0.0069 |   0.0027 |       0.2164 |      0.7221 |        10 |
+| covariate_year | Saliency          | 0      |     0.0428 |     0.1113 |       0 |  0.0487 |     0.0365 |     0.0613 |  1.1386 |     1.0454 |     1.2499 |       0.4401 |  0.0059 |   0.0021 |   0.0098 |       0.1627 |      0.6989 |        10 |
+| covariate_year | SmoothGrad        | 0.0145 |     0.0426 |     0.109  |       0 |  0.0484 |     0.0362 |     0.0608 |  1.137  |     1.0437 |     1.2489 |       0.4458 |  0.0057 |   0.0019 |   0.0096 |       0.1933 |      0.6989 |        10 |
+
+
 ## T10_trees
 
 | shift     | explainer   |   nu |   rho_null |   rho_seed |   omega |   delta |   delta_lo |   delta_hi |   ratio |   ratio_lo |   ratio_hi |   ratio_seed |     uec |   uec_lo |   uec_hi |   exceedance |   preserved |   n_seeds |
