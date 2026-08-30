@@ -225,3 +225,95 @@ def fig_distance_agreement(df, family="covariate", eps=0.05):
     fig.colorbar(im, ax=ax, shrink=0.8, label=r"Kendall $\tau$")
     ax.set_title("Explainer-ranking agreement across distances")
     return fig, pd.DataFrame(M, index=dists, columns=dists).reset_index()
+
+
+def fig_distributions(perpoint, family="covariate", explainers=None):
+    """Audit §19.4: report the *distribution* of the per-point change, not only its mean.
+
+    Left: violins of the four quantities. Right: ECDFs, where the separation between the shift
+    curve and the matched-null curve is the effect, and the gap to the seed floor is what a
+    seed-floor control would have reported instead.
+    """
+    keys = [k for k in perpoint if k.split("|")[1] == family]
+    explainers = explainers or ["integrated_gradients", "gradient_x_input", "kernel_shap"]
+    fig, axes = plt.subplots(1, 2, figsize=(9.2, 3.1))
+    rows = []
+
+    stacked = {}
+    for name in explainers:
+        arrs = [perpoint[k] for k in keys if k.split("|")[2] == name]
+        if not arrs:
+            continue
+        stacked[name] = np.concatenate(arrs, axis=1)
+
+    order = ["nu", "rho_null", "rho_seed", "delta"]
+    idx = {"delta": 0, "nu": 1, "rho_null": 2, "rho_seed": 3}
+    positions, data, colors = [], [], []
+    for i, name in enumerate(stacked):
+        for j, q in enumerate(order):
+            v = stacked[name][idx[q]]
+            v = v[np.isfinite(v)]
+            if v.size == 0:
+                continue
+            positions.append(i * (len(order) + 1) + j)
+            data.append(v)
+            colors.append(PALETTE[q])
+            rows.append({"explainer": name, "quantity": q, "median": float(np.median(v)),
+                         "q25": float(np.quantile(v, .25)), "q75": float(np.quantile(v, .75)),
+                         "n": int(v.size)})
+    parts = axes[0].violinplot(data, positions=positions, widths=0.85, showextrema=False,
+                               showmedians=True)
+    for body, c in zip(parts["bodies"], colors):
+        body.set_facecolor(c)
+        body.set_alpha(0.85)
+    parts["cmedians"].set_color("0.2")
+    axes[0].set_xticks([i * (len(order) + 1) + 1.5 for i in range(len(stacked))])
+    axes[0].set_xticklabels([label(n) for n in stacked], rotation=15, ha="right")
+    axes[0].set_ylabel("per-point attribution change")
+    axes[0].set_title("Distributions, not just means")
+
+    for q in order:
+        v = np.concatenate([stacked[n][idx[q]] for n in stacked])
+        v = np.sort(v[np.isfinite(v)])
+        axes[1].plot(v, np.linspace(0, 1, v.size), color=PALETTE[q], label={
+            "nu": r"$\nu$", "rho_null": r"$\rho_{\mathrm{null}}$",
+            "rho_seed": r"$\rho_{\mathrm{seed}}$", "delta": r"$\Delta$"}[q])
+    axes[1].set_xlabel("per-point attribution change")
+    axes[1].set_ylabel("ECDF")
+    axes[1].set_title("Pooled over explainers")
+    axes[1].legend(loc="lower right")
+    fig.suptitle(f"Per-point change distributions — {FAMILY_LABEL.get(family, family)} shift", y=1.03)
+    return fig, pd.DataFrame(rows)
+
+
+def fig_faithfulness_quadrant(faith, family="covariate"):
+    """Audit §9.11: stability against faithfulness on two axes.
+
+    The deflation being tested is "the explainer is just bad on one checkpoint". If that were the
+    story, the ratio would collapse when restricted to points where the explainer is faithful to
+    *both*. The diagonal is where it does not move at all.
+    """
+    q = faith[faith.family == family]
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.1))
+
+    axes[0].scatter(q.faith_source, q.faith_treat, s=18, c=PALETTE["rho_null"], edgecolors="none")
+    lim = [min(q.faith_source.min(), q.faith_treat.min()) - 0.2,
+           max(q.faith_source.max(), q.faith_treat.max()) + 0.2]
+    axes[0].plot(lim, lim, ls="--", lw=0.8, color="0.4")
+    axes[0].set_xlabel("faithfulness on $f_t$")
+    axes[0].set_ylabel("faithfulness on $f_{t+1}$")
+    axes[0].set_title("Faithfulness is not lost systematically")
+
+    axes[1].scatter(q.ratio_all, q.ratio_faithful, s=18, c=PALETTE["delta"], edgecolors="none")
+    lo = min(q.ratio_all.min(), q.ratio_faithful.min()) * 0.95
+    hi = max(q.ratio_all.max(), q.ratio_faithful.max()) * 1.05
+    axes[1].plot([lo, hi], [lo, hi], ls="--", lw=0.8, color="0.4", label="unchanged")
+    axes[1].axhline(1.0, color="0.7", lw=0.7)
+    axes[1].axvline(1.0, color="0.7", lw=0.7)
+    axes[1].set_xlabel(r"$\Delta/\rho_{\mathrm{null}}$, all preserved points")
+    axes[1].set_ylabel("restricted to faithful-to-both")
+    axes[1].set_title("The effect does not depend on faithfulness")
+    axes[1].legend(loc="upper left")
+    fig.suptitle(f"Stability against faithfulness — {FAMILY_LABEL.get(family, family)} shift", y=1.04)
+    return fig, q[["seed", "explainer", "faith_source", "faith_treat",
+                   "ratio_all", "ratio_faithful", "corr_delta_faith"]]
