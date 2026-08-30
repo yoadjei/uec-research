@@ -438,15 +438,32 @@ about unwarranted explanation change; the one signal that does correlate points 
 
 ### 7.8 Real data (T8, Fig. 8)
 
-ACS Income, source CA 2018, four target states, 10 seeds, light update. The shared-support screen
-works: domain AUC is 0.61–0.72 over the pooled data but 0.55–0.63 within the probe.
+ACS Income, source CA 2018, four target states, 10 seeds, light update (2 epochs). The
+shared-support screen works: domain AUC is 0.61–0.72 over the pooled data but 0.59–0.63 within the
+probe, and the probe is balanced across domains by construction — necessary here, because SD supplies
+4,899 rows against CA's 195,665 and an unbalanced pool would be a source-only probe.
 
-Ratios under a 2-epoch update, primary distance: MI 1.53–1.87, MS 1.80–2.12, SD 1.70–1.98,
-PR 1.44–1.75, with Cliff's δ = +1.00 (perfect separation across seeds) for most explainers, and EG
-again pinned at ≈ 1.0 by its own noise. The synthetic pattern replicates in direction and magnitude.
+**27 of 28 explainer × state combinations are significant after Holm correction**, with prediction
+agreement 0.94–0.96:
 
-ω is not computable here, so no change on real data is labelled warranted. The calibration-transfer
-check (`mech_gap`) is reported as a *necessary-not-sufficient* screen on the covariate-shift null.
+| target | mech_gap | IG | Saliency | KernelSHAP | LIME | EG |
+|---|---|---|---|---|---|---|
+| MI | **0.064** | 1.70 [1.50, 1.92] | 1.74 [1.59, 1.90] | 1.59 | 1.59 | 1.03 |
+| SD | 0.142 | 1.90 [1.68, 2.12] | 1.91 [1.76, 2.08] | 1.63 | 1.75 | 1.03 |
+| MS | 0.203 | 1.95 [1.71, 2.19] | 1.94 [1.78, 2.12] | 1.76 | 1.85 | 1.02 |
+| PR | 0.287 | 1.50 [1.32, 1.70] | 1.62 [1.46, 1.78] | 1.34 | 1.36 | 1.01 (n.s.) |
+
+Cliff's δ is +1.00 — perfect separation across all ten seeds — for saliency, SmoothGrad and
+Grad×Input on three of four targets. EG is again pinned at ≈ 1.0 by its own noise floor, and is the
+single non-significant cell.
+
+ω is not computable here, so **no change on real data is labelled warranted**. The
+calibration-transfer check `mech_gap` is a *necessary-not-sufficient* screen on the covariate null,
+and it orders the targets sensibly: Michigan's conditional transfers best (0.064) and Puerto Rico's
+worst (0.287, consistent with its very different base rate, 0.106 against California's 0.370). The
+result that matters for the covariate reading is that **Michigan — the state where the ω = 0 null is
+most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
+concept shift riding along with the covariate shift.
 
 ## 8. Ablations
 
@@ -540,5 +557,27 @@ the model's reasoning changed for a reason.
 ---
 
 ## Appendix A — Terminology
+
+"Explanation drift" denotes three different objects in the 2025–26 literature, which is why this
+paper does not use it.
+
+| term | owner | object |
+|---|---|---|
+| **explanation shift** | Mougan et al., TMLR 2025 | divergence between `P(E_f(X_source))` and `P(E_f(X_target))` for a **frozen** model; population level |
+| **explanation drift** | Dhayalkar (RSP), 2026 | epoch-to-epoch attribution change on a fixed probe **within one training run** |
+| **semantic drift** | Elangovan et al., 2026 | CAM attribution change between transfer-learned and fine-tuned checkpoints |
+| **drift explanation** | Hinder, Vaquet & Hammer | explaining **why the data drifted** — the opposite direction |
+| **Δ-attribution** | Hemmat & Fatemi, 2025 | `φ_B(x) − φ_A(x)` between two model versions |
+| **mechanistic multiplicity** | Bensmail (EvoXplain), 2025 | attribution variation across retraining seeds |
+
+Our vocabulary: **explanation change** `Δ_E(x)` for the neutral quantity; **warranted** and
+**unwarranted** change for the two components; `ν`, `ρ_null`, `ρ_seed` for the three floors; and
+*drift* reserved for RSP's temporal sequence, which we do not study.
+
+Claims we do not make, restated so they cannot be read into the paper: we propose no new stability
+metric; we do not detect distribution shift; we were not first to condition on prediction
+preservation (FASS was); we were not first to difference attributions across an update (Delta-Audit
+and the chest X-ray study were); we make no vision benchmark claim; and we never use "reliability"
+in the human-trust sense.
 
 ## Appendix B — Novelty deltas
