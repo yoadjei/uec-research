@@ -119,6 +119,20 @@
 | IG                | 300 |  0.2217 |    0.0001 |          0.3682 |                 0 |   -0.2339 |      0      |           0.2179 |             0.0001 |                    -0.3075 |                     0.4444 | True             |
 
 
+## T6_rashomon
+
+| explainer         |   magnitude |   within_rashomon |   accuracy_improving |      p |   cliffs_delta |
+|:------------------|------------:|------------------:|---------------------:|-------:|---------------:|
+| Grad$\times$Input |        0.75 |            1.1783 |               1.1446 | 0.3708 |        -0.1477 |
+| Grad$\times$Input |        1    |            1.2893 |               1.2572 | 0.927  |         0.0163 |
+| Grad$\times$Input |        1.5  |            1.6103 |               1.3823 | 0.2389 |         0.1938 |
+| Grad$\times$Input |        2    |            2.1643 |               1.5164 | 0.0032 |         0.4831 |
+| IG                |        0.75 |            1.1421 |               1.0536 | 0.4798 |         0.1169 |
+| IG                |        1    |            1.1596 |               1.1456 | 0.2881 |        -0.1733 |
+| IG                |        1.5  |            1.4149 |               1.2406 | 0.8728 |         0.0277 |
+| IG                |        2    |            1.7032 |               1.3739 | 0.0917 |         0.2769 |
+
+
 ## T4_differentiation
 
 | family    |   update_epochs | explainer            |   fass_distance |   delta_audit_jsd |   delta_audit_spurious |   ros_mean |   ros_max |   omega |     uec |   ratio |
