@@ -56,7 +56,11 @@ def topk_with(k: int):
 
 
 DISTANCES = {"spearman": d_spearman, "topk": d_topk, "cosine": d_cosine, "l1": d_l1}
-PRIMARY = "spearman"
+# l1 is primary. Rank correlation is the natural choice for comparability with RSP and FASS, but
+# it is dominated by tie structure when many features carry zero attribution: on a reference
+# supported on 5 of 20 features a full sign flip of the mechanism registers as 1-rho = 0.002, while
+# the same change is 0.11 in l1. Spearman is retained as the comparability ablation.
+PRIMARY = "l1"
 
 # k must be smaller than the support of the reference: top-k Jaccard cannot see a change that
 # reallocates mass *within* a set of exactly k informative features.
