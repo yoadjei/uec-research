@@ -465,6 +465,29 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
+### 7.9 Vision sanity check (T9, Fig. 9)
+
+CIFAR-10, a 78k-parameter ResNet, 3 seeds, additive update (the model is fine-tuned on its old data
+plus new data that is either clean or corrupted). This is a sanity check, not a benchmark: FASS and
+the chest X-ray study own vision attribution stability.
+
+Every explainer exceeds its matched null with **Cliff's δ = +1.00** — perfect separation across all
+three seeds — at ratios of 1.20–1.38 under corruption and 1.15–1.40 under the planted shortcut. IG
+is highest (1.38) and Grad-CAM behaves like the pixel-space methods despite living on a coarse
+feature grid, which it can only be compared to via its own floors. The ratios are smaller than in
+the tabular settings and we do not read anything into the difference given three seeds and a weak
+(59–63% accurate) backbone.
+
+The shortcut panel reproduces the synthetic asymmetry. Attribution mass inside the planted corner
+should fall to zero; under a 1-epoch update it moves from 0.096 to 0.083 for IG and is flat for
+saliency and Grad×Input. As on synthetic data, a light update produces unwarranted change while
+failing to produce the warranted change.
+
+One design point transfers with a correction. Fine-tuning on the new data *alone* is domain
+replacement, not an additive update: it drove accuracy from 0.59 to 0.44 and prediction agreement to
+0.54, destroying the prediction-preserved probe. Replaying the old data alongside the new — what
+deployment actually does — restores agreement to 0.72–0.82 with accuracy preserved.
+
 ## 8. Ablations
 
 The conclusion does not depend on any of the arbitrary choices (T5). Kendall τ between the
