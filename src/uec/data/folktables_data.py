@@ -14,7 +14,7 @@ sufficient one, and the paper says so.
 from dataclasses import dataclass
 
 import numpy as np
-from folktables import ACSDataSource, ACSIncome
+from folktables import ACSDataSource, ACSIncome, BasicProblem, adult_filter
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
@@ -24,6 +24,20 @@ from ..paths import ROOT
 CACHE = ROOT / "data" / "acs"
 FEATURES = ["AGEP", "COW", "SCHL", "MAR", "OCCP", "POBP", "RELP", "WKHP", "SEX", "RAC1P"]
 
+# ACS renamed RELP -> RELSHIPP in 2019, so ACSIncome cannot span years. For the year-shift
+# experiment we use the nine features common to both schemas: source and target must live in the
+# same feature space or per-feature attributions are not comparable.
+FEATURES_CROSS_YEAR = ["AGEP", "COW", "SCHL", "MAR", "OCCP", "POBP", "WKHP", "SEX", "RAC1P"]
+
+ACSIncomeCrossYear = BasicProblem(
+    features=FEATURES_CROSS_YEAR,
+    target="PINCP",
+    target_transform=lambda x: x > 50000,
+    group="RAC1P",
+    preprocess=adult_filter,
+    postprocess=lambda x: np.nan_to_num(x, -1),
+)
+
 
 @dataclass
 class TabularDomain:
@@ -32,13 +46,15 @@ class TabularDomain:
     y: np.ndarray
 
 
-def load_acs(state: str, year: str = "2018") -> TabularDomain:
+def load_acs(state: str, year: str = "2018", cross_year: bool = False) -> TabularDomain:
+    """`cross_year=True` drops the relationship feature, which ACS renamed in 2019."""
     CACHE.mkdir(parents=True, exist_ok=True)
     ds = ACSDataSource(
         survey_year=year, horizon="1-Year", survey="person", root_dir=str(CACHE)
     )
     df = ds.get_data(states=[state], download=True)
-    X, y, _ = ACSIncome.df_to_numpy(df)
+    problem = ACSIncomeCrossYear if cross_year else ACSIncome
+    X, y, _ = problem.df_to_numpy(df)
     return TabularDomain(f"{state}{year}", X.astype(np.float64), y.astype(np.int64))
 
 
