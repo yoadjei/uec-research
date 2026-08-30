@@ -21,7 +21,7 @@ repository supplies both:
 ```
 src/uec/
   data/        generators, closed-form Bayes reference, shared-support sampling
-  models/      MLP and small ResNet (smooth activations; Prop. 1 assumes C^1)
+  models/      MLP, XGBoost, small ResNet (smooth activations; Prop. 1 assumes C^1)
   train/       source training and the matched update operators
   explain/     explainers and a checkpoint-hashed attribution cache
   metrics/     normalisers, distances, the UEC decomposition, prior-work baselines
@@ -30,7 +30,7 @@ src/uec/
   plots/       figure builders
 experiments/   runners; each writes a parquet to results/
 docs/          spec.md (the contract), theory.md (proofs), lit_matrix.csv, terminology_map.md
-tests/         74+ tests, including numeric verification of every proposition
+tests/         89 tests, including numeric verification of every proposition
 ```
 
 ## Install
