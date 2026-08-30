@@ -473,6 +473,45 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
+### 7.7b The change is not faithfulness loss (E6)
+
+The obvious deflation of everything above is that our explainers are simply bad on one of the two
+checkpoints — that what we call unwarranted change is an explainer failing, not two functions
+differing. Stability and faithfulness are different constructs and we measure them separately:
+stability is Δ *between* checkpoints; faithfulness is how well an attribution describes *one*
+checkpoint, by deletion/insertion curves against that checkpoint's own output.
+
+If the deflation were right, Δ would be large only where faithfulness collapsed. It is not.
+Restricting to the probe points where the explainer is faithful to **both** checkpoints leaves the
+ratio unchanged, in all 20 (shift family × explainer) cells:
+
+| shift | explainer | ratio, all points | ratio, faithful to both | corr(Δ, faithfulness) |
+|---|---|---|---|---|
+| covariate | IG | 1.563 | 1.567 | +0.001 |
+| covariate | Grad×Input | 1.720 | 1.735 | −0.031 |
+| covariate | KernelSHAP | 1.448 | 1.459 | −0.007 |
+| concept | Grad×Input | 2.298 | 2.283 | −0.041 |
+| shortcut | KernelSHAP | 1.607 | 1.653 | −0.059 |
+| none (placebo) | IG | 1.049 | 1.039 | −0.011 |
+
+The correlation between Δ and faithfulness is between −0.08 and +0.03 across every cell. The change
+is a property of the two functions, not a failure of the instrument.
+
+A second reading of the same experiment supports §7.4 from a different direction. Because the
+generator is known, we can also measure *fidelity to the mechanism* — agreement with the exact Bayes
+attribution. Under covariate shift, where the mechanism does not move, fidelity is flat across the
+update (IG 0.700 → 0.695). Under shortcut removal, where it does move, fidelity **falls** (0.747 →
+0.516): the model's explanation drifts away from the mechanism it should now be tracking. The
+explanation moves in both cases; only in the second was movement called for, and there it moved the
+wrong way.
+
+Two honest caveats. Saliency and LIME show poor absolute faithfulness in the covariate setting
+(scores near or below zero, meaning their rankings carry little information about the model's
+output) while posting some of the highest ratios; their numbers should be read as instrument noise
+about a badly-described model, not as a sharper measurement. And faithfulness is generally lower on
+the updated checkpoint than on the source, which is itself worth noting even though it does not
+drive Δ.
+
 ### 7.8b H5: Rashomon-position updates, weakly supported and easily mis-analysed
 
 H5 predicted that updates moving the model *within* its Rashomon set — same accuracy, different
@@ -568,6 +607,30 @@ on exactly k features, the top-k set cannot move: ω measured by top-5 Jaccard i
 our concept shift, while ℓ₁ gives 0.11 and top-3 gives 0.16. This is why k is an ablation axis and
 why rank-based distances are not the primary choice here — with 15 of 20 features carrying zero
 attribution, a full sign flip of the mechanism registers as 1 − ρ_s = 0.002.
+
+### 8.1 The remaining free choices
+
+Five further axes, 5 seeds each. Every configuration gives a ratio above 1; what varies is how much.
+
+| axis | variants | ratio (IG) |
+|---|---|---|
+| architecture width | 32 / 64 / 128 hidden units | 1.57 / 1.50 / 1.45 |
+| IG baseline | zeros / source mean / **target mean** | 1.50 / 1.50 / **2.34** |
+| SHAP background | 10 / 25 / 50 samples | 1.46 / 1.46 / 1.47 |
+| LIME kernel width | 0.5 / default / 2.0 | 1.69 / 1.33 / 1.43 |
+| probe sampling | source-only / **shared support** / target-only | 1.23 / **1.50** / 1.81 |
+
+Two of these are worth stating plainly because they concern choices we made ourselves, and in both
+cases **the configuration we chose is the conservative one**.
+
+The IG baseline matters: integrating from the *target* mean gives 2.34 against 1.50 from the zero
+vector. We use the zero vector, which is also the source mean here, and it is the smaller number.
+
+Probe sampling matters more, and in the direction that should reassure a sceptic. A target-only
+probe — where the source checkpoint is extrapolating — inflates the ratio to 1.81; a source-only
+probe deflates it to 1.23. The shared-support probe, which is the only set on which *neither*
+checkpoint extrapolates, sits between them at 1.50. We are not reading the probe that maximises the
+effect; we are reading the one the argument requires.
 
 ## 9. Limitations
 
