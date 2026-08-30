@@ -159,7 +159,10 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
                                 )
                                 rows.append(s.as_dict())
 
-                                if (dname == "spearman" and eps == 0.05
+                                # cache per-point arrays under the PRIMARY distance: under
+                                # Spearman a 5-of-20-support reference gives omega no resolution
+                                # (it collapses to ~0.002 and to discrete rank permutations)
+                                if (dname == "l1" and eps == 0.05
                                         and phi_name == "abs" and feat_name == "all"):
                                     per_point[f"{seed}|{family}|{name}"] = np.stack([
                                         raw["delta"][m], raw["nu"][m],
