@@ -257,6 +257,7 @@ def main():
     verdicts = _load("reaudit_verdicts.parquet")
     budget = _load("budget_sweep.parquet")
     ablx = _load("ablations_extra.parquet")
+    width = _load("scale_width.parquet")
     folk_year = _load("folktables_year_metrics.parquet")
 
     built = {}
@@ -284,6 +285,11 @@ def main():
     if ablx is not None:
         built["T13_ablations_extra"] = ablx.groupby(["axis", "value", "explainer"])[
             ["delta", "rho_null", "ratio", "n_preserved"]].mean().reset_index()
+    if width is not None:
+        built["T14_width_scaling"] = width.groupby(["width", "explainer"]).agg(
+            n_params=("n_params", "first"), delta=("delta", "mean"),
+            rho_null=("rho_null", "mean"), ratio=("ratio", "mean"),
+            seeds=("seed", "nunique")).reset_index()
     if folk_year is not None:
         built["T8b_folktables_year"] = table_uec(folk_year)
     if trees is not None:
