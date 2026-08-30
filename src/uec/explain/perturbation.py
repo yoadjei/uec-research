@@ -22,7 +22,7 @@ def logit_fn(model):
     return f
 
 
-def kernel_shap(model, X, background=None, nsamples: int = 256, run: int = 0, **_):
+def kernel_shap(model, X, background=None, nsamples: int = 128, run: int = 0, **_):
     np.random.seed(7_000 + 31 * run)
     expl = shap.KernelExplainer(logit_fn(model), np.asarray(background), keep_index=False)
     with contextlib.redirect_stdout(io.StringIO()):
@@ -30,7 +30,7 @@ def kernel_shap(model, X, background=None, nsamples: int = 256, run: int = 0, **
     return np.asarray(vals, dtype=np.float64).reshape(len(X), -1)
 
 
-def lime_tabular(model, X, background=None, num_samples: int = 3000, run: int = 0, **_):
+def lime_tabular(model, X, background=None, num_samples: int = 1500, run: int = 0, **_):
     d = X.shape[1]
     expl = LimeTabularExplainer(
         np.asarray(background),
