@@ -12,9 +12,17 @@ not XLA.
 
 ```python
 !git clone -q https://github.com/yoadjei/uec-research.git
-!pip install -q transformers datasets
-!python uec-research/kaggle/scale_probe.py --task all --seeds 3
+!pip install -q captum transformers datasets
+!python uec-research/kaggle/scale_probe.py --task text --seeds 3
 ```
+
+Add `--task vision` as a second run if you have session time left. The script checks its
+dependencies and exits immediately with the exact pip command if any are missing, so a typo costs
+seconds rather than a download.
+
+Watch the per-seed line `probe gap |p0-pt|: ... preserved@0.05=...`. That number is the health
+check: it is the fraction of probe points on which the two checkpoints still agree closely enough
+for the comparison to mean anything. Below 0.15 the script tells you what to change.
 
 Then download from `/kaggle/working/`:
 
@@ -71,6 +79,11 @@ it. Do not tune anything to avoid that outcome.
 
 ## If something breaks
 
+- **`preserved@0.05` below 0.15** → the update moved predictions too far and the conditioned
+  comparison rests on too few points. The script warns and tells you to re-run with
+  `--text-update-lr 2e-6`. Rows at `eps=0.20` are still written either way.
 - `CUDA out of memory` → lower `--seeds` is not the fix; edit `batch=16` down to 8 in `run_text`.
-- `datasets` download errors → Kaggle sometimes needs internet enabled in notebook settings.
+- `ModuleNotFoundError` → the script now names the exact pip command and exits before
+  downloading anything. Run it and re-launch.
+- `datasets` download errors → Kaggle needs internet enabled in notebook settings.
 - No GPU detected → the script warns and continues on CPU; stop it, the text arm would take hours.
