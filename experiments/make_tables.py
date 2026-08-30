@@ -152,6 +152,32 @@ def table_invisibility_grid(sweep):
     return pd.DataFrame(rows)
 
 
+def table_reaudit(verdicts):
+    """T11: Delta-Audit's own 45 settings, with the matched null they lack."""
+    by_family = verdicts.groupby("family").agg(
+        settings=("clears_floor", "size"),
+        clears_floor=("clears_floor", "sum"),
+        below_floor=("ratio", lambda s: int((s < 1).sum())),
+        median_ratio=("ratio", "median"),
+    ).reset_index()
+    total = pd.DataFrame([{
+        "family": "ALL", "settings": len(verdicts),
+        "clears_floor": int(verdicts.clears_floor.sum()),
+        "below_floor": int((verdicts.ratio < 1).sum()),
+        "median_ratio": float(verdicts.ratio.median()),
+    }])
+    return pd.concat([by_family, total], ignore_index=True)
+
+
+def table_budget(budget):
+    """T12: what a stochastic explainer costs before nu falls below its own floor."""
+    return budget.groupby(["explainer", "budget"]).agg(
+        nu=("nu", "mean"), rho_null=("rho_null", "mean"), ratio=("ratio", "mean"),
+        nu_over_rho=("nu_over_rho", "mean"), resolvable=("resolvable", "mean"),
+        seconds=("seconds", "mean"),
+    ).reset_index()
+
+
 def table_rashomon(sweep):
     """H5: within-Rashomon vs accuracy-improving updates, stratified by shift magnitude.
 
@@ -228,6 +254,10 @@ def main():
     sweep = _load("sweep_regime.parquet")
     diff = _load("differentiation.parquet")
     theory = _load("synthetic_theory.parquet")
+    verdicts = _load("reaudit_verdicts.parquet")
+    budget = _load("budget_sweep.parquet")
+    ablx = _load("ablations_extra.parquet")
+    folk_year = _load("folktables_year_metrics.parquet")
 
     built = {}
     if syn is not None:
@@ -247,6 +277,15 @@ def main():
         built["T8_folktables"] = table_uec(folk)
     if vis is not None:
         built["T9_vision"] = table_uec(vis)
+    if verdicts is not None:
+        built["T11_reaudit"] = table_reaudit(verdicts)
+    if budget is not None:
+        built["T12_budget"] = table_budget(budget)
+    if ablx is not None:
+        built["T13_ablations_extra"] = ablx.groupby(["axis", "value", "explainer"])[
+            ["delta", "rho_null", "ratio", "n_preserved"]].mean().reset_index()
+    if folk_year is not None:
+        built["T8b_folktables_year"] = table_uec(folk_year)
     if trees is not None:
         built["T10_trees"] = table_uec(trees)
         built["T10b_trees_significance"] = table_significance(trees)
