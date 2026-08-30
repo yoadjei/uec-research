@@ -30,12 +30,14 @@ def kernel_shap(model, X, background=None, nsamples: int = 128, run: int = 0, **
     return np.asarray(vals, dtype=np.float64).reshape(len(X), -1)
 
 
-def lime_tabular(model, X, background=None, num_samples: int = 1500, run: int = 0, **_):
+def lime_tabular(model, X, background=None, num_samples: int = 1500, run: int = 0,
+                 kernel_width=None, **_):
     d = X.shape[1]
     expl = LimeTabularExplainer(
         np.asarray(background),
         mode="regression",
         discretize_continuous=False,
+        kernel_width=kernel_width,
         random_state=5_000 + 31 * run,
     )
     f = logit_fn(model)
