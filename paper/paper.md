@@ -313,6 +313,14 @@ All seven explainers exceed their matched null, and all seven survive Holm corre
 Holm-adjusted p = 0.014 for all seven (the floor of a 10-seed paired Wilcoxon after correcting
 across seven tests). Cliff's δ ≥ 0.88 for five of seven means near-perfect separation across seeds.
 
+**Measurement-grade versus noise-dominated.** The bottom two rows should not be read as small
+effects. Expected Gradients at 32 background samples has `ν = 0.135` against a matched null of
+0.138 — its own sampling noise is the entire signal, so its 1.02 means *cannot resolve*, not
+*no effect*. LIME is partly in the same position (`ν = 0.056` exceeds its null of 0.030). Among the
+five explainers whose noise floor is below their null, the range is **1.40–1.73**. We report both
+ranges and treat the budget-limited pair as a finding about explainer budgets rather than evidence
+about the phenomenon.
+
 ### 7.3 H1b: the choice of control reverses the conclusion (Fig. 2b)
 
 This is what the matched null buys. Over a grid of shift magnitude × update strength (600 runs,
