@@ -52,7 +52,8 @@ def explain_all(model, probe, probe_small, background, names, runs=(0, 1)):
     return out
 
 
-def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg, ucfg, theory=True):
+def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg, ucfg,
+        magnitude=1.5, theory=True):
     rows, per_point, theory_rows = [], {}, []
     distances = ABLATION_DISTANCES
 
@@ -60,7 +61,7 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
         cache_by_env = {}
         for family in families:
             t0 = time.time()
-            src, tgt = make_pair(family)
+            src, tgt = make_pair(family, magnitude=magnitude)
             key = (seed, src.a)
 
             if key not in cache_by_env:
@@ -146,7 +147,9 @@ def run(seeds, families, names, n_source, n_update, n_probe, n_probe_small, cfg,
                                     seed=seed, family=family, explainer=name,
                                     explainer_family=EXPLAINERS[name].family,
                                     distance=dname, phi=phi_name, features=feat_name,
-                                    eps=eps, n_matched=int(m_both.sum()),
+                                    eps=eps, magnitude=magnitude,
+                                    update_epochs=ucfg.epochs, update_lr=ucfg.lr,
+                                    n_matched=int(m_both.sum()),
                                     delta_matched=float(raw["delta"][m_both].mean())
                                     if m_both.sum() else np.nan,
                                     rho_null_matched=float(raw["rho_null"][m_both].mean())
@@ -218,9 +221,11 @@ def main():
     ap.add_argument("--n-source", type=int, default=8000)
     ap.add_argument("--n-update", type=int, default=4000)
     ap.add_argument("--n-probe", type=int, default=500)
-    ap.add_argument("--n-probe-small", type=int, default=150)
+    ap.add_argument("--n-probe-small", type=int, default=100)
     ap.add_argument("--epochs", type=int, default=60)
-    ap.add_argument("--update-epochs", type=int, default=20)
+    ap.add_argument("--update-epochs", type=int, default=2)
+    ap.add_argument("--update-lr", type=float, default=2e-4)
+    ap.add_argument("--magnitude", type=float, default=1.5)
     ap.add_argument("--tag", default="synthetic")
     ap.add_argument("--no-theory", action="store_true")
     a = ap.parse_args()
@@ -231,7 +236,8 @@ def main():
     df, per_point, theory = run(
         range(a.seeds), a.families, a.explainers, a.n_source, a.n_update,
         a.n_probe, a.n_probe_small,
-        TrainConfig(epochs=a.epochs), UpdateConfig(epochs=a.update_epochs),
+        TrainConfig(epochs=a.epochs), UpdateConfig(lr=a.update_lr, epochs=a.update_epochs),
+        magnitude=a.magnitude,
         theory=not a.no_theory,
     )
 
