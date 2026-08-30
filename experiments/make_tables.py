@@ -108,16 +108,45 @@ def table_significance(syn):
 
 
 def table_invisibility(syn):
-    """H3: is unwarranted change predicted by the metrics practitioners watch?"""
+    """H3 across seeds at one regime. Low-powered (n = seeds); the grid version below is the
+    properly powered test and is what the paper reports."""
+    from scipy.stats import pearsonr
+
     q = _primary(syn, family="covariate")
     rows = []
     for name, s in q.groupby("explainer"):
         rec = {"explainer": label(name), "n": len(s)}
         for col in ("acc_treat_tgt", "ece_treat", "agree_treat", "acc_source_src"):
             if col in s and s[col].std() > 1e-12 and s.delta.std() > 1e-12:
-                rec[col] = float(np.corrcoef(s[col], s.delta)[0, 1])
+                r, p = pearsonr(s[col], s.delta)
+                rec[col], rec[f"{col}_p"] = r, p
             else:
-                rec[col] = np.nan
+                rec[col], rec[f"{col}_p"] = np.nan, np.nan
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
+def table_invisibility_grid(sweep):
+    """H3, properly powered: over the magnitude x update-strength grid, where accuracy and
+    agreement genuinely vary. The within-magnitude columns matter most -- a marginal correlation
+    across magnitudes is confounded by magnitude itself."""
+    from scipy.stats import pearsonr
+
+    rows = []
+    for name, s in sweep.groupby("explainer"):
+        rec = {"explainer": label(name), "n": len(s)}
+        for col in ("agree", "acc_treat_tgt", "acc_src", "preserved_frac"):
+            if col in s and s[col].std() > 1e-12:
+                r, p = pearsonr(s[col], s.ratio)
+                rec[col], rec[f"{col}_p"] = r, p
+        within = [
+            pearsonr(g.acc_treat_tgt, g.ratio)[0]
+            for _, g in s.groupby("magnitude")
+            if g.acc_treat_tgt.std() > 1e-12 and len(g) > 5
+        ]
+        rec["acc_within_magnitude_min"] = min(within) if within else np.nan
+        rec["acc_within_magnitude_max"] = max(within) if within else np.nan
+        rec["acc_sign_flips"] = bool(within and min(within) < 0 < max(within))
         rows.append(rec)
     return pd.DataFrame(rows)
 
@@ -180,6 +209,8 @@ def main():
         built["T3_significance"] = table_significance(syn)
         built["T3b_invisibility"] = table_invisibility(syn)
         built["T5_ablations"] = table_ablations(syn)
+    if sweep is not None:
+        built["T3c_invisibility_grid"] = table_invisibility_grid(sweep)
     if diff is not None:
         built["T4_differentiation"] = table_differentiation(diff)
     if theory is not None:
