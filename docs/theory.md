@@ -130,20 +130,22 @@ Define per probe point, with the checkpoints actually trained:
     slack_GI(x)  = |Σ_j Δ(G×I)_j(x)|   / (|δ(x)| + |δ(b)|)
     coal_ratio(x) = ε_coal(x) / ε_data(x)
 
-Predictions, in falsifiable form:
+Predictions, in falsifiable form, with the measured outcome (10 seeds × 4 shift families ×
+500 probe points = 20,000 points; `results/synthetic_theory.parquet`):
 
-1. `slack_IG(x) ≤ 1` for **every** probe point, up to quadrature error. A single clean violation
-   falsifies either Proposition 1(i) or our implementation — we check implementation first.
-2. `slack_GI(x) > 1` for a substantial fraction of points. If it never exceeds 1, Proposition 2's
-   construction is not realised by ordinary fine-tuning, and H4's empirical half fails while the
-   theory stands (the theorem is an existence statement, not a claim about typicality). We would
-   report that honestly.
-3. `coal_ratio(x) ≫ 1`.
-4. Rank-order distance `d_spearman` is large for **both** classes — the allocation is unprotected
-   regardless of method class.
+| # | Prediction | Outcome |
+|---|---|---|
+| 1 | `slack_IG(x) ≤ 1` for **every** probe point, up to quadrature error | **Held. 0 violations / 20,000 points.** Max slack 1.00023 against a propagated quadrature tolerance of 0.00034; the identity residual is 0 to 1e-8. The bound is also *tight* — median slack 0.87–0.99 — so it is not vacuous. |
+| 2 | `slack_GI(x) > 1` for a substantial fraction | **Held. 60.8% of points**, and 60.5% restricted to prediction-preserved points; median 1.03–1.15, 90th percentile 1.47–1.62. |
+| 3 | `coal_ratio(x) ≫ 1` | **Held in direction, weaker in size.** Median `ε_coal/ε_data` is 1.5–2.0, not orders of magnitude. The honest statement is that coalition-level deviation *systematically exceeds* data-level deviation, so Proposition 3's usable bound is roughly `3ε_data` rather than `2ε_data`, and it degrades with off-manifold divergence rather than being controlled by prediction preservation. |
+| 4 | The *allocation* is unprotected for both classes | **Held**, and it is the practically important one — see §7 of the paper. |
 
-Prediction 4 is the one that matters for practice and it is the one our theory says *cannot* be
-fixed by choosing a better attribution method.
+A single clean violation of prediction 1 would have falsified either Proposition 1(i) or the
+implementation; the check was written to be able to fail and did not. Prediction 3 was stated as
+`≫` and came back as `≈1.7×`; that overstatement is corrected here rather than in the reader's
+head. Prediction 2 is a claim about typicality, not about the theorem, which is an existence
+statement — had gradients never exceeded the bound, Proposition 2 would still stand and only H4's
+empirical half would fail.
 
 ---
 
