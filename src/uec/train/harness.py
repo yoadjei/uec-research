@@ -88,7 +88,7 @@ def operator_signature(meta: dict) -> tuple:
     return (meta["n_train"], meta["n_steps"], meta["lr"], meta["epochs"])
 
 
-STREAM = {"source": 0, "null": 1, "treatment": 2, "scratch": 4}
+STREAM = {"source": 0, "matched_null": 1, "treatment": 2, "scratch": 4}
 
 
 def _stream(seed: int, tag: str) -> np.random.Generator:
@@ -106,15 +106,15 @@ def build_checkpoints(src_env, tgt_env, seed, n_source, n_update, cfg, ucfg, reg
     different initialisation, which is the Rashomon floor as EvoXplain and Laberge et al. measure
     it -- resampling the data as well would confound seed variation with sampling variation.
     """
-    regimes = regimes or ("null", "seed", "treatment", "scratch")
+    regimes = regimes or ("matched_null", "seed", "treatment", "scratch")
 
     Xs, ys = src_env.sample(n_source, _stream(seed, "source"))
     f_source, meta_source = train_source(Xs, ys, cfg, seed)
     out = {"source": (f_source, meta_source)}
 
-    if "null" in regimes:
-        Xn, yn = src_env.sample(n_update, _stream(seed, "null"))
-        out["null"] = update(f_source, Xn, yn, ucfg, seed + 1)
+    if "matched_null" in regimes:
+        Xn, yn = src_env.sample(n_update, _stream(seed, "matched_null"))
+        out["matched_null"] = update(f_source, Xn, yn, ucfg, seed + 1)
 
     if "treatment" in regimes:
         Xt, yt = tgt_env.sample(n_update, _stream(seed, "treatment"))

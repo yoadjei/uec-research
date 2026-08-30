@@ -58,6 +58,10 @@ def run_dir(dataset: str, shift: str, regime: str, seed: int) -> Path:
 
 
 def append_registry(record: dict) -> None:
+    """`regime` must never be the bare string "null": pandas reads it back as NaN, which would
+    silently drop every matched-null row for anyone reproducing from the registry."""
+    assert record.get("regime") != "null", "rename the regime; 'null' round-trips as NaN"
+
     REGISTRY.parent.mkdir(parents=True, exist_ok=True)
     new = not REGISTRY.exists()
     with REGISTRY.open("a", newline="", encoding="utf-8") as fh:
