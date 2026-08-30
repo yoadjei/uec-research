@@ -264,12 +264,16 @@ buys.
 - R3's "noise-dominated explainers in the headline" → recompute the headline range over the five
   measurement-grade explainers (1.25–1.73) and table EG/LIME separately.
 
-**Worth running before a camera-ready, in priority order:**
-1. **R4's experiment** — re-audit one published setting with the matched null and show the conclusion
-   changes. Highest value in the project; converts a methodological argument into a correction of
-   the record.
-2. **R3's EG/LIME budget sweep** — cheap, and turns a caveat into a quantitative statement about how
-   many samples a stochastic explainer needs before it can resolve a shift effect.
-3. **R2's scale probe** — one DistilBERT fine-tune with token attributions, 3 seeds. Expensive on
-   CPU; the honest alternative is to keep it as a stated limitation.
-4. R1's operator-level bound, under linear-model assumptions.
+**Status of the four requested experiments (updated after Phase A–C):**
+
+1. **R4's experiment — DONE (§7.5b).** Delta-Audit's 45 published settings re-run with a matched
+   null: 64% fall below the resample floor, 33% clear it, median ratio 0.861. Their flagship
+   examples survive, which is what makes the result credible rather than a hatchet job. This is now
+   the paper's strongest single claim.
+2. **R3's budget sweep — DONE (§8.0).** KernelSHAP needs ~16× its default sample budget and LIME
+   ~10× theirs before `ν` falls below `ρ_null`; the *estimate* is stable across budgets, only its
+   certifiability moves. Expected Gradients remains unresolved even at 512 samples.
+3. **R2's scale probe — packaged, not yet run.** `kaggle/scale_probe.py` runs DistilBERT (66M),
+   a real ResNet-18, and a width sweep to 1024 on an H100. Until it returns, scale stays a stated
+   limitation and the paper does not claim otherwise.
+4. R1's operator-level bound, under linear-model assumptions — not attempted.
