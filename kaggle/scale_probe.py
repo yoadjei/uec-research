@@ -19,8 +19,8 @@ Sized for a T4. Results are written after every seed, so a session that dies mid
 had, and re-running skips seeds already on disk.
 
     !git clone -q https://github.com/yoadjei/uec-research.git
-    !pip install -q transformers datasets
-    !python uec-research/kaggle/scale_probe.py --task all
+    !pip install -q captum transformers datasets
+    !python uec-research/kaggle/scale_probe.py --task text
 """
 
 import argparse
@@ -74,8 +74,15 @@ def row_change(A, B, distance=d_l1):
 
 
 def _report(df, title):
-    q = df[(df.distance == "l1") & (df.eps == 0.05)]
     print(f"\n=== {title} ===")
+    if df.empty or "distance" not in df:
+        print("no rows: every probe point failed the prediction-preservation filter. "
+              "Increase --seeds or n_probe.")
+        return
+    q = df[(df.distance == "l1") & (df.eps == 0.05)]
+    if q.empty:
+        print("no rows at eps=0.05; showing all eps")
+        q = df[df.distance == "l1"]
     cols = [c for c in ("rho_null", "delta", "ratio", "preserved_frac", "agree_treat") if c in q]
     print(q.groupby("explainer")[cols].mean().round(4).to_string())
 
@@ -297,8 +304,8 @@ def run_vision(seeds=3, n_source=20000, n_add=10000, n_probe=400, epochs=8,
 
 # ----------------------------------------------------------------------------- text
 
-def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr=1e-5,
-             batch=16, max_len=160, ig_steps=16):
+def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr=5e-6,
+             batch=16, max_len=160, ig_steps=16, n_replay=None):
     from captum.attr import LayerIntegratedGradients
     from datasets import load_dataset
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -309,10 +316,21 @@ def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr
     if seen:
         print(f"  resuming, seeds already done: {sorted(seen)}", flush=True)
 
+    def load_either(*names):
+        """datasets>=4 / huggingface_hub>=1 reject bare ids like 'imdb'; older versions do not
+        know the namespaced ones. Try canonical first, fall back."""
+        last: Exception = RuntimeError(f"no candidate loaded: {names}")
+        for n in names:
+            try:
+                return load_dataset(n)
+            except Exception as e:  # noqa: BLE001 - we genuinely want the next candidate
+                last = e
+        raise last
+
     model_name = "distilbert-base-uncased"
     tok = AutoTokenizer.from_pretrained(model_name)
-    imdb = load_dataset("imdb")
-    rt = load_dataset("rotten_tomatoes")
+    imdb = load_either("stanfordnlp/imdb", "imdb")
+    rt = load_either("cornell-movie-review-data/rotten_tomatoes", "rotten_tomatoes")
 
     def encode(texts):
         return tok(list(texts), truncation=True, padding="max_length",
@@ -416,11 +434,18 @@ def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr
         fit(f0, enc_src, src_y, 1, lr, seed)
         sd0 = {k: v.detach().clone() for k, v in f0.state_dict().items()}
 
+        # Replay a slice of the source rather than all of it. Replaying everything makes the
+        # update as large as the original training, which moves predictions so far that the
+        # prediction-preserved probe empties out -- and the tabular results say the effect is
+        # largest for *light* updates anyway. The slice is identical in both arms.
+        k = n_replay if n_replay is not None else n_add
+        replay_txt, replay_y = list(src_txt)[:k], src_y[:k]
+
         def updated(add_txt, add_y, s):
             m = fresh()
             m.load_state_dict(sd0)
-            enc = encode(list(src_txt) + list(add_txt))
-            n = fit(m, enc, np.concatenate([src_y, add_y]), 1, update_lr, s)
+            enc = encode(replay_txt + list(add_txt))
+            n = fit(m, enc, np.concatenate([replay_y, add_y]), 1, update_lr, s)
             return m, n
 
         f_null, n_null = updated(null_txt, null_y, seed + 1)
@@ -429,6 +454,15 @@ def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr
 
         p0, pn, pt = (probs(m, probe_enc) for m in (f0, f_null, f_treat))
         target = (p0 >= 0.5).astype(int)
+        gap = np.abs(p0 - pt)
+        pres = float(np.mean(gap <= 0.05))
+        print(f"    probe gap |p0-pt|: median={np.median(gap):.4f} "
+              f"q75={np.quantile(gap, .75):.4f}  preserved@0.05={pres:.2f} "
+              f"@0.10={np.mean(gap <= .10):.2f} @0.20={np.mean(gap <= .20):.2f}", flush=True)
+        if pres < 0.15:
+            print("    WARNING: the update is too heavy -- few probe points keep their prediction, "
+                  "so the conditioned comparison rests on very little. Re-run with "
+                  "--text-update-lr 2e-6 (results at eps=0.20 are still written).", flush=True)
 
         for method, ename in (("ig", "integrated_gradients"), ("gxi", "gradient_x_input")):
             A0 = token_attr(f0, probe_enc, target, method)
@@ -437,9 +471,9 @@ def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr
             for dist, dname in ((d_l1, "l1"), (d_spearman, "spearman")):
                 delta = row_change(A0, At, dist)
                 rho = row_change(A0, An, dist)
-                for eps in (0.02, 0.05, 0.10):
+                for eps in (0.02, 0.05, 0.10, 0.20):
                     m = preserved_mask(p0, pt, eps)
-                    if m.sum() < 15:
+                    if m.sum() < 10:
                         continue
                     rows.append(summarise(
                         delta[m], np.zeros(int(m.sum())), np.zeros(0), rho[m], rho[m],
@@ -458,11 +492,37 @@ def run_text(seeds=3, n_source=5000, n_add=2500, n_probe=200, lr=2e-5, update_lr
     return df
 
 
+REQUIRES = {
+    "width": ["captum", "shap", "lime"],       # goes through the full explainer registry
+    "vision": ["captum", "torchvision"],
+    "text": ["captum", "transformers", "datasets"],
+}
+PIP_NAME = {"lime": "lime", "datasets": "datasets", "transformers": "transformers",
+            "captum": "captum", "shap": "shap", "torchvision": "torchvision"}
+
+
+def check_deps(tasks):
+    """Fail before the data downloads, not forty minutes in."""
+    import importlib.util
+
+    missing = sorted({m for t in tasks for m in REQUIRES[t]
+                      if importlib.util.find_spec(m) is None})
+    if missing:
+        pkgs = " ".join(PIP_NAME[m] for m in missing)
+        print(f"\nERROR: missing modules for task(s) {', '.join(tasks)}: {', '.join(missing)}")
+        print(f"\n    !pip install -q {pkgs}\n")
+        sys.exit(1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", choices=["width", "vision", "text", "all"], default="all")
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--width-seeds", type=int, default=5)
+    ap.add_argument("--text-update-lr", type=float, default=5e-6,
+                    help="lower this if preserved@0.05 comes out below 0.15")
+    ap.add_argument("--text-n-source", type=int, default=5000)
+    ap.add_argument("--text-n-add", type=int, default=2000)
     a = ap.parse_args()
 
     gpu = torch.cuda.get_device_name(0) if DEV == "cuda" else "NONE"
@@ -470,6 +530,9 @@ def main():
     if DEV == "cpu":
         print("WARNING: no GPU detected. Enable an accelerator in Kaggle settings "
               "(T4 x2 or P100); on CPU the text arm will take many hours.", flush=True)
+
+    tasks = ["width", "vision", "text"] if a.task == "all" else [a.task]
+    check_deps(tasks)
     OUT.mkdir(parents=True, exist_ok=True)
 
     if a.task in ("width", "all"):
@@ -477,7 +540,8 @@ def main():
     if a.task in ("vision", "all"):
         run_vision(seeds=a.seeds)
     if a.task in ("text", "all"):
-        run_text(seeds=a.seeds)
+        run_text(seeds=a.seeds, update_lr=a.text_update_lr,
+                 n_source=a.text_n_source, n_add=a.text_n_add)
 
 
 if __name__ == "__main__":
