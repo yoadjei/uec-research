@@ -104,7 +104,8 @@ def main():
 
     made = []
     try:
-        made.append(save(*fig_concept(), FIGURES / "fig1_concept.png"))
+        fig, data = fig_concept()
+        made.append(save(fig, FIGURES / "fig1_concept.png", data))
     except Exception as e:  # a figure that cannot be built must say so, not vanish
         print(f"fig1 skipped: {e}")
 
