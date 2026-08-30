@@ -65,7 +65,13 @@ def accuracy(model, X, y, batch=256):
 
 
 def patch_mass(A, shape=(3, 32, 32), patch=PATCH):
-    """Fraction of attribution mass inside the planted-shortcut corner."""
+    """Fraction of attribution mass inside the planted-shortcut corner.
+
+    Only defined for pixel-space attributions; Grad-CAM lives on a coarse feature grid and is
+    returned as NaN rather than reshaped into a lie.
+    """
+    if A.shape[1] != int(np.prod(shape)):
+        return np.full(len(A), np.nan)
     A = np.abs(A).reshape(len(A), *shape)
     return A[:, :, :patch, :patch].sum(axis=(1, 2, 3)) / (A.sum(axis=(1, 2, 3)) + 1e-12)
 
@@ -99,9 +105,19 @@ def run(a):
             f0 = SmallResNet(width=a.width, blocks=tuple(a.blocks))
             fit(f0, src_train, ys, a.lr, a.epochs, a.batch, seed)
 
+            # An additive update replays the old data alongside the new. Training on the new data
+            # alone is not "adding data", it is domain replacement: it caused catastrophic
+            # forgetting here (accuracy 0.59 -> 0.44, agreement 0.54), which destroys the
+            # prediction-preserved probe the whole comparison rests on. The replay slice is
+            # identical in both arms, so only the distribution of the *new* half differs.
+            n_replay = len(src_train) if a.replay < 0 else min(len(src_train), a.replay)
+            replay_X, replay_y = src_train[:n_replay], ys[:n_replay]
+
             def update(add_X, add_y, s):
                 child = copy.deepcopy(f0)
-                n = fit(child, add_X, add_y, a.update_lr, a.update_epochs, a.batch, s,
+                mix_X = np.concatenate([replay_X, add_X])
+                mix_y = np.concatenate([replay_y, add_y])
+                n = fit(child, mix_X, mix_y, a.update_lr, a.update_epochs, a.batch, s,
                         freeze_stem=a.freeze_stem)
                 return child, n
 
@@ -181,6 +197,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--update-lr", type=float, default=2e-4)
     ap.add_argument("--batch", type=int, default=128)
+    ap.add_argument("--replay", type=int, default=-1, help="-1 = full source replay")
     ap.add_argument("--freeze-stem", action="store_true")
     a = ap.parse_args()
 
