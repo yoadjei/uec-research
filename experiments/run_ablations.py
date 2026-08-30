@@ -83,6 +83,18 @@ def main():
                                TrainConfig(epochs=60), ucfg,
                                regimes=("matched_null", "treatment"))
 
+        # frozen backbone: audit 16.6 -- does restricting which layers move change the picture?
+        for frozen in (0, 1):
+            ck_f = build_checkpoints(src, tgt, seed, a.n_source, a.n_update,
+                                     TrainConfig(epochs=60),
+                                     UpdateConfig(lr=2e-4, epochs=2, freeze_layers=frozen),
+                                     regimes=("matched_null", "treatment"))
+            for name in ("integrated_gradients", "gradient_x_input"):
+                d, r, ratio, n = ratio_for(ck_f, probe_shared, name, a.eps)
+                rows.append({"seed": seed, "axis": "frozen_layers", "value": str(frozen),
+                             "explainer": name, "delta": d, "rho_null": r, "ratio": ratio,
+                             "n_preserved": n})
+
         # IG baseline: the reference point the path integral starts from
         for label, b in (("zeros", np.zeros(D)),
                          ("source_mean", src.sample(4000, rng)[0].mean(0)),
