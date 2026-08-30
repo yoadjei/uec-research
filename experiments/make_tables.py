@@ -38,11 +38,12 @@ def _primary(df, **over):
     return df[m]
 
 
-def table_grid(syn, folk, vis, sweep):
+def table_grid(syn, trees, folk, vis, sweep):
     rows = []
-    for name, df, dataset in (("synthetic", syn, "synthetic (SEM, d=20)"),
-                              ("folktables", folk, "ACS Income"),
-                              ("vision", vis, "CIFAR-10")):
+    for name, df, dataset in (("synthetic", syn, "synthetic (SEM, d=20), MLP"),
+                              ("trees", trees, "synthetic (SEM, d=20), XGBoost"),
+                              ("folktables", folk, "ACS Income, MLP"),
+                              ("vision", vis, "CIFAR-10, ResNet")):
         if df is None or df.empty:
             continue
         rows.append({
@@ -223,13 +224,14 @@ def main():
     syn = _load("synthetic_metrics.parquet")
     folk = _load("folktables_metrics.parquet")
     vis = _load("vision_metrics.parquet")
+    trees = _load("trees_metrics.parquet")
     sweep = _load("sweep_regime.parquet")
     diff = _load("differentiation.parquet")
     theory = _load("synthetic_theory.parquet")
 
     built = {}
     if syn is not None:
-        built["T1_grid"] = table_grid(syn, folk, vis, sweep)
+        built["T1_grid"] = table_grid(syn, trees, folk, vis, sweep)
         built["T2_uec"] = table_uec(syn)
         built["T3_significance"] = table_significance(syn)
         built["T3b_invisibility"] = table_invisibility(syn)
@@ -245,6 +247,9 @@ def main():
         built["T8_folktables"] = table_uec(folk)
     if vis is not None:
         built["T9_vision"] = table_uec(vis)
+    if trees is not None:
+        built["T10_trees"] = table_uec(trees)
+        built["T10b_trees_significance"] = table_significance(trees)
 
     md = ["# Tables\n"]
     for name, t in built.items():
