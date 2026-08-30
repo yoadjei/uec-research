@@ -111,3 +111,14 @@ def test_probe_carries_true_labels_through_the_screen():
     pr = shared_support_probe(Xs, Xt, 400, np.random.default_rng(7), tau=0.5, ys=ys, yt=yt)
     assert pr.y is not None and len(pr.y) == 400
     assert np.array_equal(pr.y, (pr.X[:, 0] > 0).astype(int))
+
+
+def test_probe_is_balanced_even_when_domains_are_lopsided():
+    """A small target domain must not yield a probe made almost entirely of source points --
+    that is not a shared-support probe, and it starves the calibration-transfer check."""
+    rng = np.random.default_rng(8)
+    Xs = rng.normal(0.0, 1.0, (20000, 5))
+    Xt = rng.normal(0.5, 1.0, (800, 5))
+    pr = shared_support_probe(Xs, Xt, 400, np.random.default_rng(9), tau=1.0)
+    share = pr.origin.mean()
+    assert 0.35 < share < 0.65, f"probe is {share:.2f} target-origin"
