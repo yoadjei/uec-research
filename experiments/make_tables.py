@@ -21,7 +21,7 @@ from uec.stats.inference import (  # noqa: E402
 )
 
 OUT = ROOT / "paper" / "tables"
-PRIMARY = dict(distance="spearman", phi="abs", features="all", eps=0.05)
+PRIMARY = dict(distance="l1", phi="abs", features="all", eps=0.05)
 
 
 def _load(name):

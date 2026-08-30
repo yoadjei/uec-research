@@ -9,7 +9,7 @@ from ..stats.inference import bootstrap_ci, ratio_ci
 from .style import FAMILY_LABEL, PALETTE, label
 
 
-def _primary(df, family="covariate", eps=0.05, distance="spearman", phi="abs", features="all"):
+def _primary(df, family="covariate", eps=0.05, distance="l1", phi="abs", features="all"):
     q = df[
         (df.family == family) & (df.eps == eps) & (df.distance == distance)
         & (df.phi == phi) & (df.features == features)
@@ -56,7 +56,7 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
 
     ax.set_xticks(np.arange(len(plotted)))
     ax.set_xticklabels([label(n) for n in plotted], rotation=18, ha="right")
-    ax.set_ylabel(r"attribution change  $1-\rho_s$ (scaled)")
+    ax.set_ylabel(r"attribution change (normalised $\ell_1$)")
     ax.set_title(f"Explanation change against its floors — {FAMILY_LABEL.get(family, family)} shift"
                  f" ($\\epsilon={eps}$)")
     ax.legend(ncol=2, loc="upper left")
@@ -125,7 +125,7 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
 
 def fig_eps_sweep(df, family="covariate"):
     """Fig 4. Exceedance and preserved fraction across the epsilon grid."""
-    q = df[(df.family == family) & (df.distance == "spearman") & (df.phi == "abs")
+    q = df[(df.family == family) & (df.distance == "l1") & (df.phi == "abs")
            & (df.features == "all")]
     g = q.groupby(["explainer", "eps"]).agg(
         exceedance=("exceedance", "mean"), preserved=("preserved_frac", "mean"),
