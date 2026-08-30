@@ -306,9 +306,19 @@ def run_vision(seeds=3, n_source=20000, n_add=10000, n_probe=400, epochs=8,
 
 def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr=5e-6,
              batch=16, max_len=160, ig_steps=16, n_replay=None):
+    import logging
+
+    import datasets as _ds
+    import transformers
     from captum.attr import LayerIntegratedGradients
     from datasets import load_dataset
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    # a fresh classification head is re-initialised nine times per seed; the load report for it
+    # is 15 lines each and buries the numbers we actually need to read
+    transformers.logging.set_verbosity_error()
+    logging.getLogger("transformers").setLevel(logging.ERROR)
+    _ds.logging.set_verbosity_error()
 
     name = "scale_text.parquet"
     seen = done_seeds(name)
