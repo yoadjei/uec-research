@@ -3,12 +3,13 @@
 
 ## T1_grid
 
-| dataset                  | shift families                     |   explainers |   seeds |   distances |   rows |
-|:-------------------------|:-----------------------------------|-------------:|--------:|------------:|-------:|
-| synthetic (SEM, d=20)    | concept, covariate, none, shortcut |            7 |      10 |           6 |  13608 |
-| ACS Income               | covariate_state                    |            7 |      10 |           4 |  17640 |
-| CIFAR-10                 | corruption, shortcut               |            4 |       3 |           4 |    288 |
-| synthetic (regime sweep) | covariate                          |            2 |       5 |           1 |    600 |
+| dataset                        | shift families                     |   explainers |   seeds |   distances |   rows |
+|:-------------------------------|:-----------------------------------|-------------:|--------:|------------:|-------:|
+| synthetic (SEM, d=20), MLP     | concept, covariate, none, shortcut |            7 |      10 |           6 |  13608 |
+| synthetic (SEM, d=20), XGBoost | concept, covariate, none, shortcut |            1 |      10 |           4 |   1240 |
+| ACS Income, MLP                | covariate_state                    |            7 |      10 |           4 |  17640 |
+| CIFAR-10, ResNet               | corruption, shortcut               |            4 |       3 |           4 |    288 |
+| synthetic (regime sweep)       | covariate                          |            2 |       5 |           1 |    600 |
 
 
 ## T2_uec
@@ -210,3 +211,23 @@
 | shortcut   | Grad-CAM          |    0 |     0.0848 |     0.2751 |       0 |  0.1184 |     0.1142 |     0.1239 |  1.3964 |     1.2222 |     1.5505 |       0.4312 | 0.0336 |   0.0208 |   0.044  |       0.2894 |      0.3853 |         3 |
 | shortcut   | IG                |    0 |     0.1304 |     0.4207 |       0 |  0.1592 |     0.1531 |     0.1707 |  1.2209 |     1.1346 |     1.2852 |       0.3787 | 0.0288 |   0.0182 |   0.0379 |       0.2791 |      0.3853 |         3 |
 | shortcut   | Saliency          |    0 |     0.123  |     0.4256 |       0 |  0.1417 |     0.1337 |     0.1522 |  1.1517 |     1.1025 |     1.1933 |       0.3331 | 0.0187 |   0.0129 |   0.0247 |       0.4138 |      0.3853 |         3 |
+
+
+## T10_trees
+
+| shift     | explainer   |   nu |   rho_null |   rho_seed |   omega |   delta |   delta_lo |   delta_hi |   ratio |   ratio_lo |   ratio_hi |   ratio_seed |     uec |   uec_lo |   uec_hi |   exceedance |   preserved |   n_seeds |
+|:----------|:------------|-----:|-----------:|-----------:|--------:|--------:|-----------:|-----------:|--------:|-----------:|-----------:|-------------:|--------:|---------:|---------:|-------------:|------------:|----------:|
+| concept   | tree_shap   |    0 |     0.2232 |     0.1168 |  0.1165 |  0.2595 |     0.2527 |     0.2669 |  1.1629 |     1.0965 |     1.2407 |       2.2297 | -0.0802 |  -0.0938 |  -0.0646 |       0.171  |      0.1248 |        10 |
+| covariate | tree_shap   |    0 |     0.2127 |     0.1103 |  0      |  0.4418 |     0.4319 |     0.45   |  2.0771 |     1.9955 |     2.1673 |       4.0205 |  0.2291 |   0.2186 |   0.2387 |       0.8887 |      0.4292 |        10 |
+| none      | tree_shap   |    0 |     0.2211 |     0.1139 |  0      |  0.2166 |     0.2088 |     0.2248 |  0.9798 |     0.9446 |     1.0157 |       1.9027 | -0.0045 |  -0.0126 |   0.0034 |       0.0489 |      0.4196 |        10 |
+| shortcut  | tree_shap   |    0 |     0.2084 |     0.1009 |  0.2382 |  0.3345 |     0.3241 |     0.3443 |  1.605  |     1.5413 |     1.6768 |       3.3224 | -0.1121 |  -0.1193 |  -0.106  |       0.5427 |      0.244  |        10 |
+
+
+## T10b_trees_significance
+
+| shift     | explainer   |      p |   p_holm |   cliffs_delta | significant   |
+|:----------|:------------|-------:|---------:|---------------:|:--------------|
+| concept   | tree_shap   | 0.002  |   0.002  |           1    | True          |
+| covariate | tree_shap   | 0.002  |   0.002  |           1    | True          |
+| none      | tree_shap   | 0.4316 |   0.4316 |          -0.24 | False         |
+| shortcut  | tree_shap   | 0.002  |   0.002  |           1    | True          |

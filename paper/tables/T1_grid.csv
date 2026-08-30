@@ -1,5 +1,6 @@
 dataset,shift families,explainers,seeds,distances,rows
-"synthetic (SEM, d=20)","concept, covariate, none, shortcut",7,10,6,13608
-ACS Income,covariate_state,7,10,4,17640
-CIFAR-10,"corruption, shortcut",4,3,4,288
+"synthetic (SEM, d=20), MLP","concept, covariate, none, shortcut",7,10,6,13608
+"synthetic (SEM, d=20), XGBoost","concept, covariate, none, shortcut",1,10,4,1240
+"ACS Income, MLP",covariate_state,7,10,4,17640
+"CIFAR-10, ResNet","corruption, shortcut",4,3,4,288
 synthetic (regime sweep),covariate,2,5,1,600
