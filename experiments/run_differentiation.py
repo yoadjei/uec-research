@@ -20,7 +20,7 @@ from uec.data.support import shared_support_probe  # noqa: E402
 from uec.data.synthetic import D, S0, make_pair  # noqa: E402
 from uec.explain.cache import attribute  # noqa: E402
 from uec.metrics.baselines import compare_all  # noqa: E402
-from uec.metrics.distances import d_spearman  # noqa: E402
+from uec.metrics.distances import d_l1  # noqa: E402
 from uec.metrics.normalise import l1_abs  # noqa: E402
 from uec.metrics.uec import change, preserved_mask  # noqa: E402
 from uec.models.mlp import logits, probabilities  # noqa: E402
@@ -68,15 +68,15 @@ def main():
                 if mask.sum() < 20:
                     continue
 
-                omega = omega_reference(src, tgt, probe, BASE, l1_abs, d_spearman)
+                omega = omega_reference(src, tgt, probe, BASE, l1_abs, d_l1)
                 for name in a.explainers:
                     bg, _ = src.sample(25, np.random.default_rng(seed))
                     A0 = attribute(f0, probe, name, background=bg)
                     A1 = attribute(f1, probe, name, background=bg)
                     An = attribute(ck["null"][0], probe, name, background=bg)
 
-                    delta = change(A0, A1, l1_abs, d_spearman)
-                    floor = float(change(A0, An, l1_abs, d_spearman)[mask].mean())
+                    delta = change(A0, A1, l1_abs, d_l1)
+                    floor = float(change(A0, An, l1_abs, d_l1)[mask].mean())
 
                     rec = compare_all(A0, A1, z0, z1, p0, p1, delta, omega, mask, floor)
                     rec.update({
