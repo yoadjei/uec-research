@@ -81,11 +81,11 @@ Our contributions:
 2. **A matched-operator null.** The control for a fine-tune-on-target treatment is the identical
    fine-tune on fresh *source* data, matched in learning rate, epochs, step count and sample size.
    Only the distribution differs. Prior work's implicit control — an independent retrain — is a
-   different operator on a different amount of data, and we show it inverts the conclusion (§7.4).
+   different operator on a different amount of data, and we show it inverts the conclusion (§7.2–§7.3).
 3. **A decomposition, not a metric.** UEC subtracts ω and the floors from the measured change. Every
    distance we use already exists; the contribution is the reference and the controls.
 4. **Three propositions** on which explainer classes inherit stability from prediction stability,
-   each with a sharpness construction and a per-point empirical check (§5, §7.5).
+   each with a sharpness construction and a per-point empirical check (§5, §7.8).
 5. **An empirical finding** that survives its own controls: unwarranted change exists, it is largest
    where predictions are best preserved, and it is invisible to accuracy, calibration and prediction
    agreement.
@@ -180,7 +180,7 @@ and explosive exactly in the prediction-preserving regime this paper is about.
 **Why the matched null is the load-bearing choice.** The null and the treatment contain the same
 optimisation transient; only the treatment additionally contains the distribution signal. Comparing
 a *fine-tune* against a *from-scratch retrain*, as the seed floor does, confounds the operator with
-the distribution. §7.4 shows this is not a fastidious distinction: the two controls order the update
+the distribution. §7.2 and §7.3 show this is not a fastidious distinction: the two controls order the update
 regimes in opposite directions.
 
 ## 5. Theory
