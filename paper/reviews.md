@@ -273,7 +273,10 @@ buys.
 2. **R3's budget sweep — DONE (§8.0).** KernelSHAP needs ~16× its default sample budget and LIME
    ~10× theirs before `ν` falls below `ρ_null`; the *estimate* is stable across budgets, only its
    certifiability moves. Expected Gradients remains unresolved even at 512 samples.
-3. **R2's scale probe — packaged, not yet run.** `kaggle/scale_probe.py` runs DistilBERT (66M),
-   a real ResNet-18, and a width sweep to 1024 on an H100. Until it returns, scale stays a stated
-   limitation and the paper does not claim otherwise.
+3. **R2's scale probe — half done.** The **width sweep to 1024 is complete and ran on CPU** (it
+   cost minutes, not GPU-hours): the ratio is stable across a 630x parameter range, 1.7k to 1.07M,
+   so R2's specific worry that the ratio vanishes with capacity is answered. The remaining half --
+   DistilBERT at 66M parameters and a real ResNet-18 -- is packaged as `kaggle/scale_probe.py` for
+   a T4/P100 (not an H100; that assumption was wrong). Until it returns, *architectural* scale
+   stays a stated limitation.
 4. R1's operator-level bound, under linear-model assumptions — not attempted.
