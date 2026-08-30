@@ -413,7 +413,7 @@ Over 20,000 probe points (10 seeds × 4 shift families × 500 points):
   bound on **60.8%** of points (60.5% among prediction-preserved points), with a 90th percentile of
   1.47–1.62.
 - **Proposition 3's premise fails in the predicted direction, at moderate size.** Coalition-level
-  deviation exceeds data-level deviation by a median factor of 1.5–2.0. The usable bound is
+  deviation exceeds data-level deviation by a median factor of 1.4–1.9. The usable bound is
   therefore ≈ 3ε_data rather than 2ε_data, and it is governed by off-manifold divergence, which
   prediction preservation does not control. We had predicted "≫" and record the correction.
 
@@ -464,6 +464,25 @@ worst (0.287, consistent with its very different base rate, 0.106 against Califo
 result that matters for the covariate reading is that **Michigan — the state where the ω = 0 null is
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
+
+### 7.8b H5: Rashomon-position updates, weakly supported and easily mis-analysed
+
+H5 predicted that updates moving the model *within* its Rashomon set — same accuracy, different
+function — produce more unwarranted change than accuracy-improving updates. Splitting the 600-run
+grid by accuracy gain on the target gives, at first, the **opposite** answer: accuracy-improving
+updates show a higher ratio (Grad×Input 1.54 vs 1.31, p < 10⁻⁴).
+
+That comparison is confounded. The accuracy-improving group sits at a mean shift magnitude of 1.78
+against 0.96 for the other, and magnitude is the dominant driver of the ratio. Controlling for it by
+comparing accuracy-gain terciles *within* each magnitude stratum reverses the sign, consistently:
+within-Rashomon updates show the larger ratio in **8 of 8 strata** (sign test p = 0.008), though the
+difference is individually significant only at the largest shift (Grad×Input at magnitude 2.0:
+2.16 vs 1.52, p = 0.003).
+
+We report H5 as **weakly supported in direction, not established in size**. It is also a worked
+example of §7.7's point: an association between unwarranted change and a monitored quantity can
+invert once the shift magnitude is controlled, so marginal correlations in this setting should not
+be read causally — including ours.
 
 ### 7.9 Vision sanity check (T9, Fig. 9)
 
