@@ -20,7 +20,15 @@ conclusion. Measured against the seed-retraining floor that prior work uses impl
 fine-tuning looks maximally shift-driven; measured against the matched null it is not shift-driven
 at all, and most of the attribution movement reported after a model update is attributable to the
 optimisation rather than to the new data. Unwarranted change is largest for *light* updates, where
-predictions are best preserved. We accompany this with three propositions establishing which
+predictions are best preserved.
+
+Two further results follow. First, the magnitude of attribution change is **uninformative about
+legitimacy**: for six of seven explainers, change relative to the matched null is statistically
+indistinguishable between a shift that leaves the Bayes-optimal predictor untouched and one that
+rewrites it, and two published metrics consequently rank correct adaptation as 45% and 89% *worse*
+than unwarranted drift. Second, the monitored quantity that does correlate with unwarranted change
+points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
+accuracy's association reverses sign across shift magnitudes. We accompany this with three propositions establishing which
 explainer classes inherit stability from prediction stability: completeness pins the *aggregate*
 attribution mass of path-integrated explainers to within the output change, local-gradient
 explainers inherit no such bound even in aggregate, and Shapley-type explainers are bounded only
@@ -234,9 +242,22 @@ collinear features are unreliable independently of any shift, with a Z-threshold
 redundant block is collinear by construction. Every headline result is reported on the full feature
 set *and* on the reliable partition, so "this is just collinearity" is not an available deflation.
 
+**Distance.** The primary distance is the normalised-ℓ₁ distance between attribution masses, not
+rank correlation, and the reason is stated here rather than left to the ablation. Rank correlation
+is the natural choice for comparability with RSP and FASS, but it is dominated by tie structure when
+many features carry zero attribution: on a reference supported on 5 of 20 features, a full sign flip
+of the generating mechanism registers as `1 − ρ_s = 0.002` while the same change is 0.11 in ℓ₁, and
+top-5 Jaccard registers it as exactly 0 because the top-5 set cannot move. ℓ₁ on the normalised
+absolute attributions is a proper metric on the attribution simplex, magnitude-sensitive, and free of
+that pathology. Spearman, cosine and two top-k variants are reported as ablations, and the explainer
+ranking is identical under all of them (§8), so nothing turns on the choice.
+
 **Statistics.** Seeds are the unit of dependence; all intervals bootstrap over seeds, and ratios use
 a paired bootstrap since numerator and denominator come from the same seed. Paired Wilcoxon with
-Cliff's δ compares treatment to null per probe point; Holm corrects across explainers.
+Cliff's δ compares treatment to null per probe point; Holm corrects across explainers. Note the
+floor on a paired Wilcoxon: with 10 seeds the smallest attainable p is 0.002, and after Holm
+correction across seven explainers, 0.014. Five seeds cannot reach significance at all after
+correction, which is why the main experiments use ten.
 
 ---
 
@@ -317,17 +338,31 @@ and light incremental fine-tuning is the realistic deployment regime.
 This is the central result. Compare a shift where the mechanism does not change (covariate, ω = 0)
 with one where it changes a great deal (shortcut removal, ω = 0.326), under the same update:
 
-| explainer | Δ covariate (ω=0) | Δ shortcut (ω=0.33) | paired p |
-|---|---|---|---|
-| IG | 0.0398 | 0.0386 | **0.63** |
-| KernelSHAP | 0.0388 | 0.0415 | 0.23 |
-| Saliency | 0.0436 | 0.0366 | 0.010 |
-| Grad×Input | 0.0419 | 0.0365 | 0.037 |
+The two families use different source models (the shortcut source is trained on data where the
+shortcut is predictive), so raw Δ is not a controlled contrast. The controlled comparison normalises
+each condition by **its own** matched null, which removes that confound:
 
-For IG and KernelSHAP the measured change is **statistically indistinguishable** between the two
-cases. For saliency and Grad×Input it differs — but in the *wrong direction*: they move **more** when
-nothing should change than when everything should. Under a light update the attribution change
-carries essentially no information about whether the underlying mechanism moved.
+| explainer | ratio, covariate (ω=0) | ratio, shortcut (ω=0.33) | paired p |
+|---|---|---|---|
+| IG | 1.52 [1.36, 1.71] | 1.56 [1.39, 1.77] | **0.56** |
+| Saliency | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | **0.38** |
+| SmoothGrad | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | **0.43** |
+| Grad×Input | 1.67 [1.49, 1.87] | 1.57 [1.41, 1.76] | **0.38** |
+| KernelSHAP | 1.40 [1.27, 1.55] | 1.59 [1.43, 1.80] | **0.16** |
+| EG | 1.02 [1.02, 1.03] | 1.02 [1.01, 1.02] | **0.23** |
+| LIME | 1.25 [1.14, 1.37] | 1.86 [1.67, 2.08] | 0.002 |
+
+For **six of seven explainers** the amount of attribution change, relative to what the same update
+would have produced on in-distribution data, is **statistically indistinguishable** between a shift
+that leaves the Bayes-optimal predictor untouched and one that rewrites it. LIME is the exception,
+and it is the explainer whose own noise floor exceeds its matched null.
+
+The raw magnitudes tell the same story (IG: 0.0398 vs 0.0386, p = 0.63; KernelSHAP: 0.0388 vs
+0.0415, p = 0.23), and for saliency and Grad×Input they differ in the *wrong direction* — moving
+**more** when nothing should change than when everything should.
+
+Under a light update, then, attribution change carries essentially no information about whether the
+underlying mechanism moved.
 
 UEC separates what magnitude cannot: **+0.014 under covariate shift** (unwarranted change present)
 versus **−0.31 under shortcut removal** (the model moved far *less* than warranted).
@@ -339,6 +374,13 @@ Does the model ever adapt? Yes, with a stronger update. Ground-truth attribution
 shortcut feature should fall from 0.337 to 0. The model takes it from 0.261 to 0.226 at 2 epochs
 (13% of the way), 0.060 at 20 epochs (77%), and 0.022 at 100 epochs (92%). Warranted adaptation
 requires a substantial update; unwarranted change appears with a minimal one.
+
+**The retrain-from-scratch regime.** Retraining on the target rather than fine-tuning changes
+attributions by 0.19–0.39 — five to ten times the fine-tuning change, and above even the seed floor.
+But the shift contributes almost none of it: for IG, retraining from scratch moves attributions by
+0.205 with **no shift at all** and 0.252 under covariate shift, a ratio of 1.23. Retraining destroys
+explanation stability almost entirely through the retraining, which is the same lesson as §7.3 at a
+larger amplitude.
 
 ### 7.5 What prior metrics report on the same checkpoints (T4)
 
@@ -470,9 +512,30 @@ gradients inherit nothing even in aggregate; Shapley values are bounded only off
 where nothing constrains them. The allocation across features — the only part anyone reads — carries
 no stability guarantee in any class.
 
-For practice the recommendation is narrow and, we think, defensible: do not read attribution change
-across a model update without a matched-operator null, and do not interpret its magnitude as
-evidence about the model's reasoning having changed for a reason.
+### A protocol for practitioners
+
+The findings imply a short procedure, and it costs two extra training runs.
+
+1. **Build the matched null.** Before comparing `f_t` and `f_{t+1}`, apply the *same* update — same
+   learning rate, epochs, step count and sample size — to a fresh sample from the **old**
+   distribution. That checkpoint, not the original model and not an independent retrain, is the
+   comparison point.
+2. **Measure the explainer's own noise.** Run stochastic explainers twice on the same checkpoint. If
+   that spread approaches the null (as it did here for Expected Gradients at 32 samples), the
+   comparison cannot resolve anything and the sample budget must go up before any conclusion is
+   drawn.
+3. **Condition on prediction preservation** and report how many points survive. Without it, most of
+   what is measured is the arithmetic consequence of changed predictions.
+4. **Do not read the magnitude as evidence about the mechanism.** It does not distinguish a model
+   that changed its evidence for no reason from one that correctly began tracking a real change
+   (§7.4). If the mechanism's status matters, it has to come from knowledge of the shift, not from
+   the attributions.
+5. **Report the exceedance rate, not only the mean**, and check the conclusion on the
+   collinearity-reliable feature subset.
+
+The recommendation is narrow and, we think, defensible: do not read attribution change across a
+model update without a matched-operator null, and do not interpret its magnitude as evidence that
+the model's reasoning changed for a reason.
 
 ---
 
