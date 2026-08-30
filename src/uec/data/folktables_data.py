@@ -83,8 +83,22 @@ def shared_support_probe(Xs, Xt, n: int, rng, tau: float = 1.0, seed: int = 0, y
         raise RuntimeError(
             f"shared support too thin: {int(keep.sum())}/{n} at tau={tau} (auc={auc:.3f})"
         )
-    idx = np.flatnonzero(keep)[rng.choice(int(keep.sum()), n, replace=False)]
-    return Probe(X[idx], None if y is None else y[idx], origin[idx], auc)
+
+    # Draw evenly from each domain's overlap. Pooling and subsampling would follow the domain
+    # sizes, and with a small target state (SD has 4899 rows against CA's 195665) the probe would
+    # be almost entirely source points -- not a shared-support probe at all, and too few target
+    # points to compute the calibration-transfer check that stands in for omega.
+    idx = []
+    for d in (0, 1):
+        pool = np.flatnonzero(keep & (origin == d))
+        take = min(n // 2, len(pool))
+        idx.append(rng.choice(pool, take, replace=False))
+    chosen = np.concatenate(idx)
+    if len(chosen) < n:
+        rest = np.setdiff1d(np.flatnonzero(keep), chosen)
+        chosen = np.concatenate([chosen, rng.choice(rest, n - len(chosen), replace=False)])
+    chosen = rng.permutation(chosen)
+    return Probe(X[chosen], None if y is None else y[chosen], origin[chosen], auc)
 
 
 @dataclass
