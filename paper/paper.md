@@ -81,11 +81,11 @@ Our contributions:
 2. **A matched-operator null.** The control for a fine-tune-on-target treatment is the identical
    fine-tune on fresh *source* data, matched in learning rate, epochs, step count and sample size.
    Only the distribution differs. Prior work's implicit control — an independent retrain — is a
-   different operator on a different amount of data, and we show it inverts the conclusion (§7.2).
+   different operator on a different amount of data, and we show it inverts the conclusion (§7.4).
 3. **A decomposition, not a metric.** UEC subtracts ω and the floors from the measured change. Every
    distance we use already exists; the contribution is the reference and the controls.
 4. **Three propositions** on which explainer classes inherit stability from prediction stability,
-   each with a sharpness construction and a per-point empirical check (§5, §7.4).
+   each with a sharpness construction and a per-point empirical check (§5, §7.5).
 5. **An empirical finding** that survives its own controls: unwarranted change exists, it is largest
    where predictions are best preserved, and it is invisible to accuracy, calibration and prediction
    agreement.
@@ -180,7 +180,7 @@ and explosive exactly in the prediction-preserving regime this paper is about.
 **Why the matched null is the load-bearing choice.** The null and the treatment contain the same
 optimisation transient; only the treatment additionally contains the distribution signal. Comparing
 a *fine-tune* against a *from-scratch retrain*, as the seed floor does, confounds the operator with
-the distribution. §7.2 shows this is not a fastidious distinction: the two controls order the update
+the distribution. §7.4 shows this is not a fastidious distinction: the two controls order the update
 regimes in opposite directions.
 
 ## 5. Theory
@@ -204,7 +204,7 @@ that pins IG's aggregate to `2ε`.
 every coalition `S`, then `‖φ^f − φ^{f'}‖_∞ ≤ 2ε_coal`.
 *Remark.* `ε_coal` is a supremum over **masked, off-manifold** inputs. Fine-tuning optimises a loss
 over the data distribution and leaves the model unconstrained there, so data-level preservation
-implies nothing about `ε_coal`. We measure the gap rather than assume it (§7.4).
+implies nothing about `ε_coal`. We measure the gap rather than assume it (§7.8).
 
 **Corollary.** Under a prediction-preserving update: IG's aggregate attribution mass is bounded;
 gradient×input's is not; Shapley's is bounded only if the coalition premise holds. **No class is
@@ -300,33 +300,39 @@ identical whether the input is drawn from the source or the target distribution 
 distribution and the ratio is 1.00–1.10 for every explainer, with every interval covering 1
 (EG 1.000 [0.986, 1.014]; IG 1.05; LIME 1.10).
 
-### 7.2 H1: unwarranted change exists (Fig. 2, T2, T3)
+### 7.2 The control decides the answer, and a placebo proves it (T10)
 
-Under covariate shift ω is exactly 0, so all measured change on the shared support is unwarranted.
-All seven explainers exceed their matched null, and all seven survive Holm correction:
+We lead with the result that decides how everything after it should be read, and with the condition
+in which the right answer is known in advance: **no shift at all**.
 
-| explainer | ν | ρ_null | ρ_seed | Δ | ratio [95% CI] | Cliff's δ |
-|---|---|---|---|---|---|---|
-| Saliency | 0.000 | 0.025 | 0.200 | 0.044 | **1.73 [1.58, 1.89]** | +0.98 |
-| SmoothGrad | 0.016 | 0.025 | 0.197 | 0.044 | 1.73 [1.58, 1.89] | +0.98 |
-| Grad×Input | 0.000 | 0.025 | 0.131 | 0.042 | 1.67 [1.49, 1.87] | +0.90 |
-| IG | 0.000 | 0.026 | 0.097 | 0.040 | 1.52 [1.36, 1.71] | +0.90 |
-| KernelSHAP | 0.073 | 0.028 | 0.126 | 0.039 | 1.40 [1.27, 1.55] | +0.88 |
-| LIME | 0.056 | 0.030 | 0.113 | 0.038 | 1.25 [1.14, 1.37] | +0.64 |
-| EG | 0.135 | 0.138 | 0.162 | 0.141 | 1.02 [1.02, 1.03] | +0.48 |
+The setting is gradient-boosted trees with **exact TreeSHAP**, chosen because it removes two
+objections at once: the model is not differentiable, so nothing here can be a gradient artefact, and
+the explainer has no sampling noise, so `ν = 0` by construction. Trees are not fine-tuned either,
+which makes the matched null exact rather than approximate — identical hyperparameters and sample
+size in both arms, differing only in the sampling distribution.
 
-Holm-adjusted p = 0.014 for all seven (the floor of a 10-seed paired Wilcoxon after correcting
-across seven tests). Cliff's δ ≥ 0.88 for five of seven means near-perfect separation across seeds.
+| shift | ω | Δ/ρ_null [95% CI] | Δ/ρ_seed | p | Cliff's δ |
+|---|---|---|---|---|---|
+| **none (placebo)** | 0 | **0.98 [0.95, 1.02]** | **1.90** | 0.43 (n.s.) | −0.24 |
+| covariate | 0 | **2.08 [2.00, 2.17]** | 4.01 | 0.002 | +1.00 |
+| shortcut | 0.238 | 1.61 [1.54, 1.68] | 3.32 | 0.002 | +1.00 |
+| concept | 0.117 | 1.16 [1.10, 1.24] | 2.22 | 0.002 | +1.00 |
 
-**Measurement-grade versus noise-dominated.** The bottom two rows should not be read as small
-effects. Expected Gradients at 32 background samples has `ν = 0.135` against a matched null of
-0.138 — its own sampling noise is the entire signal, so its 1.02 means *cannot resolve*, not
-*no effect*. LIME is partly in the same position (`ν = 0.056` exceeds its null of 0.030). Among the
-five explainers whose noise floor is below their null, the range is **1.40–1.73**. We report both
-ranges and treat the budget-limited pair as a finding about explainer budgets rather than evidence
-about the phenomenon.
+The effect here is *larger* than anything we measure on a differentiable model (2.08 against the
+1.4–1.7 of §7.4), and it survives on the collinearity-reliable partition (2.10).
 
-### 7.3 H1b: the choice of control reverses the conclusion (Fig. 2b)
+**The placebo row is the paper's sharpest single result.** With no shift whatsoever, the matched
+null correctly reports 0.98 and no significance. The seed floor — the control implicit in the
+retraining literature — reports **1.90×** on the very same checkpoints. It manufactures a
+near-two-fold "shift effect" out of a condition in which nothing shifted.
+
+Note also that the two floors invert between model classes. For MLPs under light fine-tuning the
+seed floor is far *larger* than the matched null (0.20 versus 0.025), so it understates the effect;
+for trees under retraining it is far *smaller* (0.11 versus 0.21), so it overstates it. The seed
+floor is not conservative in a known direction — it is simply the wrong control, and which way it
+misleads depends on the model class and the update operator.
+
+### 7.3 Which control you choose reverses the conclusion (Fig. 2b)
 
 This is what the matched null buys. Over a grid of shift magnitude × update strength (600 runs,
 5 seeds), the ratio to the matched null **falls** as the update gets heavier, while the ratio to the
@@ -354,7 +360,33 @@ Note also that the effect is largest exactly where predictions are best preserve
 agreement is 0.98 and the ratio is at its maximum. The two desiderata align rather than trade off,
 and light incremental fine-tuning is the realistic deployment regime.
 
-### 7.4 H2: magnitude is uninformative about legitimacy (Fig. 2c, T4)
+### 7.4 H1: unwarranted change exists (Fig. 2, T2, T3)
+
+Under covariate shift ω is exactly 0, so all measured change on the shared support is unwarranted.
+All seven explainers exceed their matched null, and all seven survive Holm correction:
+
+| explainer | ν | ρ_null | ρ_seed | Δ | ratio [95% CI] | Cliff's δ |
+|---|---|---|---|---|---|---|
+| Saliency | 0.000 | 0.025 | 0.200 | 0.044 | **1.73 [1.58, 1.89]** | +0.98 |
+| SmoothGrad | 0.016 | 0.025 | 0.197 | 0.044 | 1.73 [1.58, 1.89] | +0.98 |
+| Grad×Input | 0.000 | 0.025 | 0.131 | 0.042 | 1.67 [1.49, 1.87] | +0.90 |
+| IG | 0.000 | 0.026 | 0.097 | 0.040 | 1.52 [1.36, 1.71] | +0.90 |
+| KernelSHAP | 0.073 | 0.028 | 0.126 | 0.039 | 1.40 [1.27, 1.55] | +0.88 |
+| LIME | 0.056 | 0.030 | 0.113 | 0.038 | 1.25 [1.14, 1.37] | +0.64 |
+| EG | 0.135 | 0.138 | 0.162 | 0.141 | 1.02 [1.02, 1.03] | +0.48 |
+
+Holm-adjusted p = 0.014 for all seven (the floor of a 10-seed paired Wilcoxon after correcting
+across seven tests). Cliff's δ ≥ 0.88 for five of seven means near-perfect separation across seeds.
+
+**Measurement-grade versus noise-dominated.** The bottom two rows should not be read as small
+effects. Expected Gradients at 32 background samples has `ν = 0.135` against a matched null of
+0.138 — its own sampling noise is the entire signal, so its 1.02 means *cannot resolve*, not
+*no effect*. LIME is partly in the same position (`ν = 0.056` exceeds its null of 0.030). Among the
+five explainers whose noise floor is below their null, the range is **1.40–1.73**. We report both
+ranges and treat the budget-limited pair as a finding about explainer budgets rather than evidence
+about the phenomenon.
+
+### 7.5 H2: magnitude is uninformative about legitimacy (Fig. 2c, Fig. 3, T4)
 
 This is the central result. Compare a shift where the mechanism does not change (covariate, ω = 0)
 with one where it changes a great deal (shortcut removal, ω = 0.326), under the same update:
@@ -410,7 +442,7 @@ But the shift contributes almost none of it: for IG, retraining from scratch mov
 explanation stability almost entirely through the retraining, which is the same lesson as §7.3 at a
 larger amplitude.
 
-### 7.5 What prior metrics report on the same checkpoints (T4)
+### 7.6 What prior metrics report on the same checkpoints (T4)
 
 At 100 update epochs, where the model has genuinely adapted to the shortcut removal:
 
@@ -430,7 +462,7 @@ ROS behaves as the theory predicts: its mean swings from 2.03 to 4.81 to 0.49 ac
 with no interpretable pattern, because its denominator vanishes in exactly the prediction-preserving
 regime the paper is about.
 
-### 7.5b Re-auditing a published result (T11)
+### 7.7 Re-auditing a published result (T11)
 
 The argument so far is methodological. This section makes it concrete by applying the missing
 control to a published audit.
@@ -479,7 +511,7 @@ published attribution audit report movement that cannot be distinguished from �
 smaller than — what resampling the training data produces at fixed configuration. That is the cost
 of the missing control, measured on someone else's grid rather than argued on ours.
 
-### 7.6 H4: the method-class asymmetry (Fig. 5, T7)
+### 7.8 H4: the method-class asymmetry (Fig. 5, T7)
 
 Over 20,000 probe points (10 seeds × 4 shift families × 500 points):
 
@@ -497,7 +529,46 @@ Over 20,000 probe points (10 seeds × 4 shift families × 500 points):
 The practically important row is the one no method class satisfies: rank-order change is large for
 every explainer under every condition. Completeness buys aggregate stability and nothing else.
 
-### 7.7 H3: not invisible, but not usable either (T3b, T3c)
+### 7.9 The change is not faithfulness loss (E6, Fig. 11)
+
+The obvious deflation of everything above is that our explainers are simply bad on one of the two
+checkpoints — that what we call unwarranted change is an explainer failing, not two functions
+differing. Stability and faithfulness are different constructs and we measure them separately:
+stability is Δ *between* checkpoints; faithfulness is how well an attribution describes *one*
+checkpoint, by deletion/insertion curves against that checkpoint's own output.
+
+If the deflation were right, Δ would be large only where faithfulness collapsed. It is not.
+Restricting to the probe points where the explainer is faithful to **both** checkpoints leaves the
+ratio unchanged, in all 20 (shift family × explainer) cells:
+
+| shift | explainer | ratio, all points | ratio, faithful to both | corr(Δ, faithfulness) |
+|---|---|---|---|---|
+| covariate | IG | 1.563 | 1.567 | +0.001 |
+| covariate | Grad×Input | 1.720 | 1.735 | −0.031 |
+| covariate | KernelSHAP | 1.448 | 1.459 | −0.007 |
+| concept | Grad×Input | 2.298 | 2.283 | −0.041 |
+| shortcut | KernelSHAP | 1.607 | 1.653 | −0.059 |
+| none (placebo) | IG | 1.049 | 1.039 | −0.011 |
+
+The correlation between Δ and faithfulness is between −0.08 and +0.03 across every cell. The change
+is a property of the two functions, not a failure of the instrument.
+
+A second reading of the same experiment supports §7.5 from a different direction. Because the
+generator is known, we can also measure *fidelity to the mechanism* — agreement with the exact Bayes
+attribution. Under covariate shift, where the mechanism does not move, fidelity is flat across the
+update (IG 0.700 → 0.695). Under shortcut removal, where it does move, fidelity **falls** (0.747 →
+0.516): the model's explanation drifts away from the mechanism it should now be tracking. The
+explanation moves in both cases; only in the second was movement called for, and there it moved the
+wrong way.
+
+Two honest caveats. Saliency and LIME show poor absolute faithfulness in the covariate setting
+(scores near or below zero, meaning their rankings carry little information about the model's
+output) while posting some of the highest ratios; their numbers should be read as instrument noise
+about a badly-described model, not as a sharper measurement. And faithfulness is generally lower on
+the updated checkpoint than on the source, which is itself worth noting even though it does not
+drive Δ.
+
+### 7.10 H3: not invisible, but not usable either (T3b, T3c)
 
 The original hypothesis — that unwarranted change is uncorrelated with the metrics practitioners
 watch — is **partly refuted, and the refutation is worse news than the hypothesis**. Across the
@@ -513,7 +584,26 @@ watch — is **partly refuted, and the refutation is worse news than the hypothe
 So a practitioner watching accuracy, calibration and prediction agreement is not merely uninformed
 about unwarranted explanation change; the one signal that does correlate points the wrong way.
 
-### 7.8 Real data (T8, Fig. 8)
+### 7.11 H5: Rashomon-position updates, weakly supported and easily mis-analysed
+
+H5 predicted that updates moving the model *within* its Rashomon set — same accuracy, different
+function — produce more unwarranted change than accuracy-improving updates. Splitting the 600-run
+grid by accuracy gain on the target gives, at first, the **opposite** answer: accuracy-improving
+updates show a higher ratio (Grad×Input 1.54 vs 1.31, p < 10⁻⁴).
+
+That comparison is confounded. The accuracy-improving group sits at a mean shift magnitude of 1.78
+against 0.96 for the other, and magnitude is the dominant driver of the ratio. Controlling for it by
+comparing accuracy-gain terciles *within* each magnitude stratum reverses the sign, consistently:
+within-Rashomon updates show the larger ratio in **8 of 8 strata** (sign test p = 0.008), though the
+difference is individually significant only at the largest shift (Grad×Input at magnitude 2.0:
+2.16 vs 1.52, p = 0.003).
+
+We report H5 as **weakly supported in direction, not established in size**. It is also a worked
+example of §7.10's point: an association between unwarranted change and a monitored quantity can
+invert once the shift magnitude is controlled, so marginal correlations in this setting should not
+be read causally — including ours.
+
+### 7.12 Real data (T8, T8b, Fig. 8)
 
 ACS Income, source CA 2018, four target states, 10 seeds, light update (2 epochs). The
 shared-support screen works: domain AUC is 0.61–0.72 over the pooled data but 0.59–0.63 within the
@@ -555,94 +645,7 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
-### 7.7b The change is not faithfulness loss (E6)
-
-The obvious deflation of everything above is that our explainers are simply bad on one of the two
-checkpoints — that what we call unwarranted change is an explainer failing, not two functions
-differing. Stability and faithfulness are different constructs and we measure them separately:
-stability is Δ *between* checkpoints; faithfulness is how well an attribution describes *one*
-checkpoint, by deletion/insertion curves against that checkpoint's own output.
-
-If the deflation were right, Δ would be large only where faithfulness collapsed. It is not.
-Restricting to the probe points where the explainer is faithful to **both** checkpoints leaves the
-ratio unchanged, in all 20 (shift family × explainer) cells:
-
-| shift | explainer | ratio, all points | ratio, faithful to both | corr(Δ, faithfulness) |
-|---|---|---|---|---|
-| covariate | IG | 1.563 | 1.567 | +0.001 |
-| covariate | Grad×Input | 1.720 | 1.735 | −0.031 |
-| covariate | KernelSHAP | 1.448 | 1.459 | −0.007 |
-| concept | Grad×Input | 2.298 | 2.283 | −0.041 |
-| shortcut | KernelSHAP | 1.607 | 1.653 | −0.059 |
-| none (placebo) | IG | 1.049 | 1.039 | −0.011 |
-
-The correlation between Δ and faithfulness is between −0.08 and +0.03 across every cell. The change
-is a property of the two functions, not a failure of the instrument.
-
-A second reading of the same experiment supports §7.4 from a different direction. Because the
-generator is known, we can also measure *fidelity to the mechanism* — agreement with the exact Bayes
-attribution. Under covariate shift, where the mechanism does not move, fidelity is flat across the
-update (IG 0.700 → 0.695). Under shortcut removal, where it does move, fidelity **falls** (0.747 →
-0.516): the model's explanation drifts away from the mechanism it should now be tracking. The
-explanation moves in both cases; only in the second was movement called for, and there it moved the
-wrong way.
-
-Two honest caveats. Saliency and LIME show poor absolute faithfulness in the covariate setting
-(scores near or below zero, meaning their rankings carry little information about the model's
-output) while posting some of the highest ratios; their numbers should be read as instrument noise
-about a badly-described model, not as a sharper measurement. And faithfulness is generally lower on
-the updated checkpoint than on the source, which is itself worth noting even though it does not
-drive Δ.
-
-### 7.8b H5: Rashomon-position updates, weakly supported and easily mis-analysed
-
-H5 predicted that updates moving the model *within* its Rashomon set — same accuracy, different
-function — produce more unwarranted change than accuracy-improving updates. Splitting the 600-run
-grid by accuracy gain on the target gives, at first, the **opposite** answer: accuracy-improving
-updates show a higher ratio (Grad×Input 1.54 vs 1.31, p < 10⁻⁴).
-
-That comparison is confounded. The accuracy-improving group sits at a mean shift magnitude of 1.78
-against 0.96 for the other, and magnitude is the dominant driver of the ratio. Controlling for it by
-comparing accuracy-gain terciles *within* each magnitude stratum reverses the sign, consistently:
-within-Rashomon updates show the larger ratio in **8 of 8 strata** (sign test p = 0.008), though the
-difference is individually significant only at the largest shift (Grad×Input at magnitude 2.0:
-2.16 vs 1.52, p = 0.003).
-
-We report H5 as **weakly supported in direction, not established in size**. It is also a worked
-example of §7.7's point: an association between unwarranted change and a monitored quantity can
-invert once the shift magnitude is controlled, so marginal correlations in this setting should not
-be read causally — including ours.
-
-### 7.8c A non-differentiable model class, and the sharpest test of the control (T10)
-
-Everything above uses differentiable models and mostly gradient-based explainers, so the phenomenon
-could be an artefact of either. Gradient-boosted trees with **exact TreeSHAP** rule that out. Trees
-are not fine-tuned, so the update operator is a full retrain — which makes the matched null exact
-rather than approximate (identical hyperparameters and sample size for both arms, differing only in
-the sampling distribution) and gives `ν = 0` by construction.
-
-| shift | ω | Δ/ρ_null [95% CI] | Δ/ρ_seed | p | Cliff's δ |
-|---|---|---|---|---|---|
-| **none (placebo)** | 0 | **0.98 [0.95, 1.02]** | **1.90** | 0.43 (n.s.) | −0.24 |
-| covariate | 0 | **2.08 [2.00, 2.17]** | 4.01 | 0.002 | +1.00 |
-| shortcut | 0.238 | 1.61 [1.54, 1.68] | 3.32 | 0.002 | +1.00 |
-| concept | 0.117 | 1.16 [1.10, 1.24] | 2.22 | 0.002 | +1.00 |
-
-The effect is *larger* than for any differentiable model (2.08 versus 1.4–1.7), so it is not a
-gradient artefact, and it survives on the collinearity-reliable partition (2.10).
-
-**The placebo row is the paper's sharpest single result.** With no shift whatsoever, the matched
-null correctly reports 0.98 and no significance. The seed floor — the control implicit in the
-retraining literature — reports **1.90×** on the very same checkpoints. It manufactures a
-near-two-fold "shift effect" out of a condition in which nothing shifted.
-
-Note also that the two floors invert between model classes. For MLPs under light fine-tuning the
-seed floor is far *larger* than the matched null (0.20 versus 0.025), so it understates the effect;
-for trees under retraining it is far *smaller* (0.11 versus 0.21), so it overstates it. The seed
-floor is not conservative in a known direction — it is simply the wrong control, and which way it
-misleads depends on the model class and the update operator.
-
-### 7.9 Vision sanity check (T9, Fig. 9)
+### 7.13 Vision sanity check (T9, Fig. 9)
 
 CIFAR-10, a 78k-parameter ResNet, 3 seeds, additive update (the model is fine-tuned on its old data
 plus new data that is either clean or corrupted). This is a sanity check, not a benchmark: FASS and
@@ -805,7 +808,7 @@ The findings imply a short procedure, and it costs two extra training runs.
    what is measured is the arithmetic consequence of changed predictions.
 4. **Do not read the magnitude as evidence about the mechanism.** It does not distinguish a model
    that changed its evidence for no reason from one that correctly began tracking a real change
-   (§7.4). If the mechanism's status matters, it has to come from knowledge of the shift, not from
+   (§7.5). If the mechanism's status matters, it has to come from knowledge of the shift, not from
    the attributions.
 5. **Report the exceedance rate, not only the mean**, and check the conclusion on the
    collinearity-reliable feature subset.
