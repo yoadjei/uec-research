@@ -97,8 +97,25 @@ def main():
 
     # the heavy-update DistilBERT point, measured on Kaggle and recorded verbatim. It is kept
     # separate because it is confounded with update strength (docs/preregistration_scale.md).
+    # the swept result supersedes the heavy-update point: it is the one that excludes the
+    # update-size confound (docs/preregistration_scale.md)
+    swept = RESULTS / "scale_text_sweep_ig.csv"
+    if swept.exists():
+        sw = pd.read_csv(swept)
+        r, lo, hi = ratio_ci(sw.delta.values, sw.rho_null.values, n_boot=20000)
+        rows.append({
+            "model": "distilbert", "n_params": 66_955_010,
+            "explainer": "integrated_gradients", "eps": 0.05,
+            "seeds": int(sw.seed.nunique()),
+            "delta": float(sw.delta.mean()), "rho_null": float(sw.rho_null.mean()),
+            "ratio": r, "ratio_lo": lo, "ratio_hi": hi,
+            "p": paired_test(sw.delta.values, sw.rho_null.values),
+            "cliffs_delta": cliffs_delta(sw.delta.values, sw.rho_null.values),
+            "preserved_frac": 0.67, "agree_treat": float(sw.agree_treat.mean()),
+        })
+
     heavy = RESULTS / "scale_text_heavy.csv"
-    if heavy.exists() and _load("scale_text.parquet") is None:
+    if heavy.exists() and not swept.exists():
         h = pd.read_csv(heavy)
         for name, s in h.groupby("explainer"):
             r, lo, hi = ratio_ci(s.delta.values, s.rho_null.values, n_boot=20000)
@@ -119,20 +136,35 @@ def main():
     print("\n" + tab.round(4).to_string(index=False))
 
     use_style()
-    fig, ax = plt.subplots(figsize=(6.2, 3.2))
-    for name, s in tab.groupby("explainer"):
-        s = s.dropna(subset=["n_params"]).sort_values("n_params")
-        if s.empty:
-            continue
-        ax.errorbar(s.n_params, s.ratio,
-                    yerr=[s.ratio - s.ratio_lo, s.ratio_hi - s.ratio],
-                    marker="o", ms=4, capsize=2, lw=1.2, label=label(name))
+    fig, ax = plt.subplots(figsize=(6.4, 3.3))
+    # DistilBERT is drawn detached. It differs from the others in architecture and in starting from
+    # a pretrained checkpoint, not only in parameter count, so a connecting line would assert a
+    # smooth trend across a gap that confounds three things at once.
+    for name, sub in tab.groupby("explainer"):
+        sub = sub.dropna(subset=["n_params"]).sort_values("n_params")
+        scratch = sub[sub.model != "distilbert"]
+        if not scratch.empty:
+            ax.errorbar(scratch.n_params, scratch.ratio,
+                        yerr=[scratch.ratio - scratch.ratio_lo,
+                              scratch.ratio_hi - scratch.ratio],
+                        marker="o", ms=4, capsize=2, lw=1.2, label=label(name))
+        pre = sub[sub.model == "distilbert"]
+        if not pre.empty:
+            ax.errorbar(pre.n_params, pre.ratio,
+                        yerr=[pre.ratio - pre.ratio_lo, pre.ratio_hi - pre.ratio],
+                        marker="D", ms=7, capsize=2, lw=0, color=PALETTE["delta"],
+                        markerfacecolor="white", markeredgewidth=1.5,
+                        label="DistilBERT (pretrained)")
+            ax.annotate("pretrained\ntransformer", ha="center", fontsize=6.8,
+                        color=PALETTE["delta"], xytext=(0, 30), textcoords="offset points",
+                        xy=(float(pre.n_params.iloc[0]), float(pre.ratio.iloc[0])))
     ax.axhline(1.0, color="0.4", ls="--", lw=0.9)
     ax.set_xscale("log")
     ax.set_xlabel("model parameters")
     ax.set_ylabel(r"$\Delta / \rho_{\mathrm{null}}$")
-    ax.set_title("Does the effect decay with model size?")
-    ax.legend(ncol=2, fontsize=7)
+    ax.set_title("Flat across 630$\\times$ in models trained from scratch; "
+                 "absent in a pretrained transformer", fontsize=8.5)
+    ax.legend(ncol=2, fontsize=6.8, loc="lower left")
     print("\nwrote", save(fig, FIGURES / "fig12_scale.png", tab))
 
     big = tab[tab.n_params > 1e6]
