@@ -1,0 +1,7 @@
+model,n_params,explainer,seed,delta,rho_null,update,agree_treat,preserved_frac
+distilbert,66955010,integrated_gradients,0,0.232,0.2383,heavy,0.9083,0.6067
+distilbert,66955010,integrated_gradients,1,0.2122,0.2242,heavy,0.9083,0.6067
+distilbert,66955010,integrated_gradients,2,0.2279,0.2196,heavy,0.9083,0.6067
+distilbert,66955010,gradient_x_input,0,0.2824,0.2782,heavy,0.9083,0.6067
+distilbert,66955010,gradient_x_input,1,0.2702,0.2569,heavy,0.9083,0.6067
+distilbert,66955010,gradient_x_input,2,0.2817,0.2707,heavy,0.9083,0.6067
