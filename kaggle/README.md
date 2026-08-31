@@ -24,6 +24,26 @@ Add `--task vision` as a second run if you have session time left. The script ch
 dependencies and exits immediately with the exact pip command if any are missing, so a typo costs
 seconds rather than a download.
 
+### The decisive run: `--task text-sweep`
+
+A single heavy update cannot tell "no effect at this scale" apart from "an update too large to see
+it through" — on tabular data the ratio falls from 1.56 to 1.05 as the update grows, regardless of
+whether anything shifted. So sweep the update strength at 66M parameters exactly as we did at 20:
+
+```python
+!git -C uec-research pull -q
+!python uec-research/kaggle/scale_probe.py --task text-sweep --seeds 3
+```
+
+~25 min on a T4. The source model is trained once per seed and reused across update strengths, so
+three strengths cost roughly twice one, not three times. Writes `scale_text_sweep.parquet`;
+resumes per `(seed, learning rate)` cell.
+
+Read the `preserved@0.05` on each line. If the ratio rises as the update gets lighter, the effect
+exists at scale and the earlier flat result was an artefact of update size. If it stays at 1.0
+across all three, the effect genuinely does not transfer — which bounds the paper's claim and is
+worth reporting.
+
 ### Getting results back
 
 There is no file transfer out of a Kaggle session, so use the reporter — it runs the arm if
