@@ -70,18 +70,23 @@ FAMILY_LABEL = {
 
 
 def use_style():
-    """Sized for a single ICLR column at print scale: nothing below 7pt after reduction."""
+    """Type is sized so the figure can sit at ICLR's ~5.5in text width without shrinking.
+
+    Figures are authored close to their printed size rather than large-and-downscaled: a
+    7in-wide figure placed at 5.5in shrinks every label by 0.79x, which is how 8.5pt type ends
+    up at 6.7pt on the page.
+    """
     mpl.rcParams.update({
         "figure.dpi": 160,
         "savefig.dpi": 400,          # camera-ready; 200 visibly softens thin rules in print
         "savefig.bbox": "tight",
         "savefig.pad_inches": 0.02,
-        "font.size": 8.5,
+        "font.size": 10.0,
         "font.family": "sans-serif",
         "font.sans-serif": ["DejaVu Sans"],
         "mathtext.fontset": "dejavusans",
-        "axes.titlesize": 9,
-        "axes.labelsize": 8.5,
+        "axes.titlesize": 10.0,
+        "axes.labelsize": 10.0,
         "axes.titlepad": 5,
         "axes.spines.top": False,
         "axes.spines.right": False,
@@ -90,11 +95,11 @@ def use_style():
         "grid.alpha": 0.25,
         "grid.linewidth": 0.5,
         "legend.frameon": False,
-        "legend.fontsize": 7.5,
+        "legend.fontsize": 9.0,
         "legend.handlelength": 1.6,
         "legend.columnspacing": 1.2,
-        "xtick.labelsize": 7.5,
-        "ytick.labelsize": 7.5,
+        "xtick.labelsize": 9.0,
+        "ytick.labelsize": 9.0,
         "lines.linewidth": 1.3,
         "hatch.linewidth": 0.6,
         "patch.linewidth": 0.4,
