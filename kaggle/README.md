@@ -11,14 +11,15 @@ not XLA.
 ## Run it
 
 ```python
-# idempotent: clones the first time, pulls on every re-run
-!git -C uec-research pull -q 2>/dev/null || git clone -q https://github.com/yoadjei/uec-research.git
+# works whether or not the directory exists, and whether or not the session was reset
+!rm -rf uec-research && git clone -q https://github.com/yoadjei/uec-research.git
 !pip install -q captum transformers datasets
 !python uec-research/kaggle/scale_probe.py --task text --seeds 3
 ```
 
-A plain `git clone` fails with *"destination path already exists"* on the second run in a session
-and silently leaves you on the old code, so use the line above.
+`git clone` fails with *"destination path already exists"* on a re-run and silently leaves you on
+old code; `git pull` fails after a session reset because the directory is gone. Deleting first
+handles both. The clone is a few hundred kB.
 
 Add `--task vision` as a second run if you have session time left. The script checks its
 dependencies and exits immediately with the exact pip command if any are missing, so a typo costs
