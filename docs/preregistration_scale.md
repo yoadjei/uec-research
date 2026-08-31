@@ -92,3 +92,39 @@ Three seeds cannot support a strong claim in any branch. Whatever we record will
 The paper's contribution is that a missing control changes conclusions. That argument only holds if
 we apply the same discipline to ourselves — including when the honest answer is that our headline
 effect disappears on the largest model we tested.
+
+---
+
+## 7. Outcome — recorded 31 Aug 2026
+
+The sweep ran as specified: update learning rate ∈ {1×10⁻⁶, 3×10⁻⁶, 1×10⁻⁵}, 3 seeds, source
+model trained once per seed and reused.
+
+| update lr | agreement | preserved | IG ratio [95% CI] | Grad×Input ratio [95% CI] |
+|---|---|---|---|---|
+| 1×10⁻⁶ | 0.968 | 0.72 | 1.090 [0.952, 1.221] | 1.038 [0.980, 1.096] |
+| 3×10⁻⁶ | 0.955 | 0.64 | 1.076 [0.978, 1.161] | 1.115 [1.045, 1.169] |
+| 1×10⁻⁵ | 0.955 | 0.65 | 0.966 [0.909, 1.028] | 1.043 [0.985, 1.087] |
+| pooled | 0.959 | 0.67 | **1.023 [0.970, 1.093]** | — |
+
+**Branch S2 fires.** `r*` at the lightest usable update is 1.090, ≤ 1.10 at all three strengths,
+every preserved fraction well above the 0.15 floor. The verdict was produced by
+`kaggle/report_sweep.py` applying the rule above, not by reading the table.
+
+**The confound named in §2 is excluded.** All three updates are *lighter* than the tabular ones that
+produce 1.27–1.47 at matched agreement, and making the update tenfold gentler moved the ratio only
+from 0.97 to 1.09. Update size is not hiding the effect.
+
+**Honesty notes, per the §5 commitments.**
+- Grad×Input at 3×10⁻⁶ gives 1.115 [1.045, 1.169] — one cell out of six whose interval excludes 1.
+  We report it rather than round it away. The claim is *no reliable effect*, not *exactly zero*.
+- Per-seed IG ratios at the lightest update are 1.22, 1.10, 0.95. Three seeds cannot characterise
+  that spread, and the paper says so.
+- No outcome was attributed to a bug, nothing but update strength was varied, and S2 is in the
+  abstract as promised.
+
+**What we did not conclude.** DistilBERT differs from every other model on two axes at once — 62×
+larger *and* pretrained, where everything else trains from scratch. The data cannot separate them.
+The paper states the bound and names the pretraining hypothesis as the more likely mechanism
+without asserting it. Distinguishing them needs a same-size transformer trained from scratch, which
+is the natural next experiment and is not in this paper.
