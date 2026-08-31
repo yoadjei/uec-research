@@ -1,0 +1,5 @@
+source,pretrained,mean,size
+distilbert,1,0.9642053547046012,9
+mlp_sweep,0,0.8130234015589668,600
+mlp_width,0,0.6754217231556225,60
+resnet_small,0,0.7939504007692436,12
