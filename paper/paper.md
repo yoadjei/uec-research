@@ -528,7 +528,7 @@ Over 20,000 probe points (10 seeds × 4 shift families × 500 points):
   bound on **60.8%** of points (60.5% among prediction-preserved points), with a 90th percentile of
   1.47–1.62.
 - **Proposition 3's premise fails in the predicted direction, at moderate size.** Coalition-level
-  deviation exceeds data-level deviation by a median factor of 1.4–1.9. The usable bound is
+  deviation exceeds data-level deviation by a median factor of 1.5–2.0. The usable bound is
   therefore ≈ 3ε_data rather than 2ε_data, and it is governed by off-manifold divergence, which
   prediction preservation does not control. We had predicted "≫" and record the correction.
 
@@ -556,8 +556,10 @@ ratio unchanged, in all 20 (shift family × explainer) cells:
 | shortcut | KernelSHAP | 1.607 | 1.653 | −0.059 |
 | none (placebo) | IG | 1.049 | 1.039 | −0.011 |
 
-The correlation between Δ and faithfulness is between −0.08 and +0.03 across every cell. The change
-is a property of the two functions, not a failure of the instrument.
+Across all 20 seed-averaged cells the correlation between Δ and faithfulness lies in
+[−0.084, +0.032]. Individual seeds range wider ([−0.389, +0.252] over 200 rows), so the claim is
+that there is no *systematic* association, not that no single run shows one. The change is a
+property of the two functions, not a failure of the instrument.
 
 A second reading of the same experiment supports §7.5 from a different direction. Because the
 generator is known, we can also measure *fidelity to the mechanism* — agreement with the exact Bayes
