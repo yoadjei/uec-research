@@ -160,6 +160,25 @@ def main():
         c("7.5 per-point variance explained (max)", pp.r2.max(), 0.015, tol=0.002,
           source="T17b_per_point")
 
+    ss = load("semisynthetic_metrics.parquet")
+    if ss is not None:
+        cov = ss[(ss.family == "covariate") & (ss.explainer == "integrated_gradients")]
+        c("7.15 semi-synthetic omega under covariate tilt", cov.omega.abs().max(), 0.0, tol=0,
+          source="semisynthetic")
+        c("7.15 semi-synthetic IG ratio", cov.ratio.mean(), 1.198, tol=0.02,
+          source="semisynthetic")
+        pp = dict(np.load(RESULTS / "semisynthetic_perpoint.npz"))
+        rs = [np.corrcoef(*pp[k])[0, 1] for k in pp if k.endswith("concept")
+              and np.std(pp[k][1]) > 1e-12]
+        c("7.15 semi-synthetic per-point r", np.mean(rs), 0.807, tol=0.01, source="semisynthetic")
+
+    rd = load("redundancy_sweep.parquet")
+    if rd is not None:
+        c("7.15 redundancy: r at max collinearity", rd.per_point_r.min(), 0.665, tol=0.02,
+          source="T19_redundancy")
+        c("7.15 redundancy: ratio stays near 1", rd.ratio.max(), 1.171, tol=0.03,
+          source="T19_redundancy")
+
     ab = load("T5_ablations.csv", TABLES)
     if ab is not None:
         core = ab[ab.value.isin(["spearman", "cosine", "l1", "abs", "all", "reliable"])]
