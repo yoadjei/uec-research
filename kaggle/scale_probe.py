@@ -224,7 +224,8 @@ def run_vision(seeds=3, n_source=20000, n_add=10000, n_probe=400, epochs=8,
         return np.concatenate(out)
 
     for seed in range(seeds):
-        if seed in seen:
+        todo = [x for x in lrs if (seed, float(x)) not in done]
+        if not todo:
             continue
         t0 = time.time()
         rng = np.random.default_rng(seed)
@@ -305,7 +306,14 @@ def run_vision(seeds=3, n_source=20000, n_add=10000, n_probe=400, epochs=8,
 # ----------------------------------------------------------------------------- text
 
 def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr=5e-6,
-             batch=16, max_len=160, ig_steps=16, n_replay=None):
+             batch=16, max_len=160, ig_steps=16, n_replay=None, update_lrs=None,
+             out_name="scale_text.parquet"):
+    """DistilBERT, IMDB -> Rotten Tomatoes, with the matched-operator null.
+
+    `update_lrs` sweeps update strength while reusing one source model per seed. That matters: the
+    tabular results show the ratio falls toward 1 as the update grows, so a single heavy update
+    cannot distinguish "no effect at this scale" from "an update too large to see it through".
+    """
     import logging
 
     import datasets as _ds
@@ -314,26 +322,17 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
     from datasets import load_dataset
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    # a fresh classification head is re-initialised nine times per seed; the load report for it
-    # is 15 lines each and buries the numbers we actually need to read
     transformers.logging.set_verbosity_error()
     logging.getLogger("transformers").setLevel(logging.ERROR)
     _ds.logging.set_verbosity_error()
 
-    name = "scale_text.parquet"
-    seen = done_seeds(name)
-    rows = pd.read_parquet(OUT / name).to_dict("records") if seen else []
-    if seen:
-        print(f"  resuming, seeds already done: {sorted(seen)}", flush=True)
-
     def load_either(*names):
-        """datasets>=4 / huggingface_hub>=1 reject bare ids like 'imdb'; older versions do not
-        know the namespaced ones. Try canonical first, fall back."""
+        """datasets>=4 rejects bare ids like 'imdb'; older versions do not know namespaced ones."""
         last: Exception = RuntimeError(f"no candidate loaded: {names}")
         for n in names:
             try:
                 return load_dataset(n)
-            except Exception as e:  # noqa: BLE001 - we genuinely want the next candidate
+            except Exception as e:  # noqa: BLE001 - try the next candidate
                 last = e
         raise last
 
@@ -342,6 +341,14 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
     imdb = load_either("stanfordnlp/imdb", "imdb")
     rt = load_either("cornell-movie-review-data/rotten_tomatoes", "rotten_tomatoes")
 
+    lrs = [float(x) for x in (update_lrs or [update_lr])]
+    prev = pd.read_parquet(OUT / out_name) if (OUT / out_name).exists() else None
+    rows = prev.to_dict("records") if prev is not None else []
+    done = ({(int(a), float(b)) for a, b in zip(prev.seed, prev.update_lr)}
+            if prev is not None and "update_lr" in prev else set())
+    if done:
+        print(f"  resuming, {len(done)} (seed, lr) cells already on disk", flush=True)
+
     def encode(texts):
         return tok(list(texts), truncation=True, padding="max_length",
                    max_length=max_len, return_tensors="pt")
@@ -349,7 +356,7 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
     def take(ds, split, n, rng):
         idx = rng.choice(len(ds[split]), n, replace=False)
         sub = ds[split].select(idx.tolist())
-        return sub["text"], np.array(sub["label"])
+        return list(sub["text"]), np.array(sub["label"])
 
     def fresh():
         return AutoModelForSequenceClassification.from_pretrained(
@@ -388,15 +395,15 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
         out = []
         for i in range(0, enc["input_ids"].shape[0], 32):
             with amp_ctx():
-                logits = model(input_ids=enc["input_ids"][i:i + 32].to(DEV),
-                               attention_mask=enc["attention_mask"][i:i + 32].to(DEV)).logits
-            out.append(torch.softmax(logits.float(), -1)[:, 1].cpu().numpy())
+                lg = model(input_ids=enc["input_ids"][i:i + 32].to(DEV),
+                           attention_mask=enc["attention_mask"][i:i + 32].to(DEV)).logits
+            out.append(torch.softmax(lg.float(), -1)[:, 1].cpu().numpy())
         return np.concatenate(out)
 
     def token_attr(model, enc, target, method):
-        """Layer attributions on the embedding output, summed over hidden dim and trimmed to each
-        example's real tokens. Attribution runs in fp32: fp16 gradients through 16 integration
-        steps lose too much precision to compare two checkpoints."""
+        """Layer attributions on the embedding output, summed over the hidden dimension and
+        trimmed to each example's real tokens. Runs in fp32: fp16 gradients through the
+        integration steps lose too much precision to compare two checkpoints."""
         emb = model.distilbert.embeddings
 
         def fwd(input_ids, attention_mask):
@@ -417,9 +424,9 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
             else:
                 store = {}
                 h = emb.register_forward_hook(lambda m, i_, o: store.setdefault("v", o))
-                logits = fwd(ids, am)
+                lg = fwd(ids, am)
                 store["v"].retain_grad()
-                logits.gather(1, tgt.view(-1, 1)).sum().backward()
+                lg.gather(1, tgt.view(-1, 1)).sum().backward()
                 a = store["v"] * store["v"].grad
                 h.remove()
             a = a.sum(-1).float().detach().cpu().numpy()
@@ -428,7 +435,8 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
         return out
 
     for seed in range(seeds):
-        if seed in seen:
+        todo = [x for x in lrs if (seed, x) not in done]
+        if not todo:
             continue
         t0 = time.time()
         rng = np.random.default_rng(seed)
@@ -438,101 +446,87 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
         probe_txt, _ = take(imdb, "test", n_probe, np.random.default_rng([seed, 3]))
         probe_enc = encode(probe_txt)
 
-        enc_src = encode(src_txt)
         torch.manual_seed(seed)
         f0 = fresh()
-        fit(f0, enc_src, src_y, 1, lr, seed)
+        fit(f0, encode(src_txt), src_y, 1, lr, seed)
         sd0 = {k: v.detach().clone() for k, v in f0.state_dict().items()}
-
-        # Replay a slice of the source rather than all of it. Replaying everything makes the
-        # update as large as the original training, which moves predictions so far that the
-        # prediction-preserved probe empties out -- and the tabular results say the effect is
-        # largest for *light* updates anyway. The slice is identical in both arms.
-        k = n_replay if n_replay is not None else n_add
-        replay_txt, replay_y = list(src_txt)[:k], src_y[:k]
-
-        def updated(add_txt, add_y, s):
-            m = fresh()
-            m.load_state_dict(sd0)
-            enc = encode(replay_txt + list(add_txt))
-            n = fit(m, enc, np.concatenate([replay_y, add_y]), 1, update_lr, s)
-            return m, n
-
-        f_null, n_null = updated(null_txt, null_y, seed + 1)
-        f_treat, n_treat = updated(treat_txt, treat_y, seed + 1)
-        assert n_null == n_treat, "matched null must take the same number of steps"
-
-        p0, pn, pt = (probs(m, probe_enc) for m in (f0, f_null, f_treat))
+        p0 = probs(f0, probe_enc)
         target = (p0 >= 0.5).astype(int)
-        gap = np.abs(p0 - pt)
-        pres = float(np.mean(gap <= 0.05))
-        print(f"    probe gap |p0-pt|: median={np.median(gap):.4f} "
-              f"q75={np.quantile(gap, .75):.4f}  preserved@0.05={pres:.2f} "
-              f"@0.10={np.mean(gap <= .10):.2f} @0.20={np.mean(gap <= .20):.2f}", flush=True)
-        if pres < 0.15:
-            print("    WARNING: the update is too heavy -- few probe points keep their prediction, "
-                  "so the conditioned comparison rests on very little. Re-run with "
-                  "--text-update-lr 2e-6 (results at eps=0.20 are still written).", flush=True)
 
-        for method, ename in (("ig", "integrated_gradients"), ("gxi", "gradient_x_input")):
-            A0 = token_attr(f0, probe_enc, target, method)
-            An = token_attr(f_null, probe_enc, target, method)
-            At = token_attr(f_treat, probe_enc, target, method)
-            for dist, dname in ((d_l1, "l1"), (d_spearman, "spearman")):
-                delta = row_change(A0, At, dist)
-                rho = row_change(A0, An, dist)
-                for eps in (0.02, 0.05, 0.10, 0.20):
-                    m = preserved_mask(p0, pt, eps)
-                    if m.sum() < 10:
-                        continue
-                    rows.append(summarise(
-                        delta[m], np.zeros(int(m.sum())), np.zeros(0), rho[m], rho[m],
-                        n_probe=len(p0), seed=seed, family="imdb_to_rt", model="distilbert",
-                        explainer=ename, distance=dname, phi="abs", features="all", eps=eps,
-                        agree_treat=float(((p0 >= .5) == (pt >= .5)).mean()),
-                        agree_null=float(((p0 >= .5) == (pn >= .5)).mean()),
-                        n_steps=n_treat,
-                    ).as_dict())
-        save_incremental(rows, name)
-        print(f"  text seed {seed} agree={((p0 >= .5) == (pt >= .5)).mean():.3f} "
-              f"({time.time() - t0:.0f}s)", flush=True)
+        # Replay a slice, not the whole source. Replaying everything makes the update as large as
+        # the original training, and the tabular sweep says that drives the ratio to 1 regardless
+        # of whether a shift happened. The slice is identical in both arms.
+        k = n_replay if n_replay is not None else n_add
+        replay_txt, replay_y = src_txt[:k], src_y[:k]
+        enc_null = encode(replay_txt + null_txt)
+        enc_treat = encode(replay_txt + treat_txt)
+        y_null = np.concatenate([replay_y, null_y])
+        y_treat = np.concatenate([replay_y, treat_y])
+
+        A0 = {m: token_attr(f0, probe_enc, target, m) for m in ("ig", "gxi")}
+
+        for cur_lr in todo:
+            def updated(enc, y, s, _lr=cur_lr):
+                m = fresh()
+                m.load_state_dict(sd0)
+                return m, fit(m, enc, y, 1, _lr, s)
+
+            f_null, n_null = updated(enc_null, y_null, seed + 1)
+            f_treat, n_treat = updated(enc_treat, y_treat, seed + 1)
+            assert n_null == n_treat, "matched null must take the same number of steps"
+
+            pn, pt = probs(f_null, probe_enc), probs(f_treat, probe_enc)
+            gap = np.abs(p0 - pt)
+            pres = float(np.mean(gap <= 0.05))
+            agree = float(((p0 >= .5) == (pt >= .5)).mean())
+            print(f"    lr={cur_lr:g}  agree={agree:.3f}  preserved@0.05={pres:.2f} "
+                  f"@0.10={np.mean(gap <= .10):.2f}  median|dp|={np.median(gap):.4f}", flush=True)
+            if pres < 0.15:
+                print("    WARNING: too few preserved points; try a smaller --text-update-lr",
+                      flush=True)
+
+            for method, ename in (("ig", "integrated_gradients"),
+                                  ("gxi", "gradient_x_input")):
+                An = token_attr(f_null, probe_enc, target, method)
+                At = token_attr(f_treat, probe_enc, target, method)
+                for dist, dname in ((d_l1, "l1"), (d_spearman, "spearman")):
+                    delta = row_change(A0[method], At, dist)
+                    rho = row_change(A0[method], An, dist)
+                    for eps in (0.02, 0.05, 0.10, 0.20):
+                        m = preserved_mask(p0, pt, eps)
+                        if m.sum() < 10:
+                            continue
+                        rows.append(summarise(
+                            delta[m], np.zeros(int(m.sum())), np.zeros(0), rho[m], rho[m],
+                            n_probe=len(p0), seed=seed, family="imdb_to_rt",
+                            model="distilbert", explainer=ename, distance=dname,
+                            phi="abs", features="all", eps=eps,
+                            update_lr=cur_lr, n_replay=k, n_steps=n_treat,
+                            agree_treat=agree,
+                            agree_null=float(((p0 >= .5) == (pn >= .5)).mean()),
+                        ).as_dict())
+            save_incremental(rows, out_name)
+        print(f"  text seed {seed} done ({time.time() - t0:.0f}s)", flush=True)
 
     df = pd.DataFrame(rows)
     _report(df, "DistilBERT  IMDB -> Rotten Tomatoes")
     return df
 
 
-REQUIRES = {
-    "width": ["captum", "shap", "lime"],       # goes through the full explainer registry
-    "vision": ["captum", "torchvision"],
-    "text": ["captum", "transformers", "datasets"],
-}
-PIP_NAME = {"lime": "lime", "datasets": "datasets", "transformers": "transformers",
-            "captum": "captum", "shap": "shap", "torchvision": "torchvision"}
-
-
-def check_deps(tasks):
-    """Fail before the data downloads, not forty minutes in."""
-    import importlib.util
-
-    missing = sorted({m for t in tasks for m in REQUIRES[t]
-                      if importlib.util.find_spec(m) is None})
-    if missing:
-        pkgs = " ".join(PIP_NAME[m] for m in missing)
-        print(f"\nERROR: missing modules for task(s) {', '.join(tasks)}: {', '.join(missing)}")
-        print(f"\n    !pip install -q {pkgs}\n")
-        sys.exit(1)
-
-
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--task", choices=["width", "vision", "text", "all"], default="all")
+    ap.add_argument("--task",
+                    choices=["width", "vision", "text", "text-sweep", "all"],
+                    default="all")
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--width-seeds", type=int, default=5)
     ap.add_argument("--text-update-lr", type=float, default=5e-6,
                     help="lower this if preserved@0.05 comes out below 0.15")
     ap.add_argument("--text-n-source", type=int, default=5000)
     ap.add_argument("--text-n-add", type=int, default=2000)
+    ap.add_argument("--text-update-lrs", type=float, nargs="+",
+                    default=[1e-6, 3e-6, 1e-5],
+                    help="update-strength sweep for --task text-sweep")
     a = ap.parse_args()
 
     gpu = torch.cuda.get_device_name(0) if DEV == "cuda" else "NONE"
@@ -542,6 +536,7 @@ def main():
               "(T4 x2 or P100); on CPU the text arm will take many hours.", flush=True)
 
     tasks = ["width", "vision", "text"] if a.task == "all" else [a.task]
+    tasks = ["text" if t == "text-sweep" else t for t in tasks]
     check_deps(tasks)
     OUT.mkdir(parents=True, exist_ok=True)
 
@@ -549,7 +544,11 @@ def main():
         run_width(seeds=a.width_seeds)
     if a.task in ("vision", "all"):
         run_vision(seeds=a.seeds)
-    if a.task in ("text", "all"):
+    if a.task == "text-sweep":
+        run_text(seeds=a.seeds, update_lrs=a.text_update_lrs,
+                 n_source=a.text_n_source, n_add=a.text_n_add,
+                 out_name="scale_text_sweep.parquet")
+    elif a.task in ("text", "all"):
         run_text(seeds=a.seeds, update_lr=a.text_update_lr,
                  n_source=a.text_n_source, n_add=a.text_n_add)
 
