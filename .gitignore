@@ -12,3 +12,6 @@ __pycache__/
 /tasks/
 /explanation_drift_audit.md
 /docs/phase0_verification.md
+
+# a measured GPU result recorded verbatim; it cannot be regenerated locally
+!/results/scale_text_heavy.csv
