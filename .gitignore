@@ -15,3 +15,5 @@ __pycache__/
 
 # a measured GPU result recorded verbatim; it cannot be regenerated locally
 !/results/scale_text_heavy.csv
+!/results/scale_text_sweep_ig.csv
+!/results/scale_text_sweep_summary.csv
