@@ -104,7 +104,7 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
     axes = np.atleast_1d(axes)
     rows = []
     for ax, fam in zip(axes, families):
-        xs, ys = [], []
+        xs, ys, per_seed = [], [], []
         for key, arr in perpoint.items():
             seed, family, name = key.split("|")
             if family != fam or name != "integrated_gradients":
@@ -112,6 +112,10 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
             delta, _, _, _, omega = arr
             xs.append(omega)
             ys.append(delta)
+            # Correlate within seed: pooling first would ignore the clustering and gives a
+            # different number from the one the text reports (T17b).
+            if np.std(omega) > 1e-12:
+                per_seed.append(np.corrcoef(delta, omega)[0, 1])
         if not xs:
             ax.set_visible(False)
             continue
@@ -119,11 +123,16 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
         ax.scatter(x, y, s=4, alpha=0.25, color=PALETTE["omega"], edgecolors="none")
         lim = [0, max(x.max(), y.max()) * 1.05]
         ax.plot(lim, lim, ls="--", color="0.4", lw=0.8, label=r"$\Delta=\omega$")
-        r = np.corrcoef(x, y)[0, 1] if x.std() > 0 else np.nan
-        ax.set_title(f"{FAMILY_LABEL.get(fam, fam)}  ($r={r:.2f}$)")
+        r_seed = np.array(per_seed)
+        m = r_seed.mean()
+        se = r_seed.std(ddof=1) / np.sqrt(len(r_seed))
+        ax.set_title(f"{FAMILY_LABEL.get(fam, fam)}  "
+                     f"($r={m:+.2f}$ [{m - 1.96 * se:+.2f}, {m + 1.96 * se:+.2f}])")
         ax.set_xlabel(r"warranted change $\omega$")
         ax.legend(loc="upper left")
-        rows.append({"family": fam, "pearson_r": r, "n": len(x)})
+        rows.append({"family": fam, "pearson_r": m, "ci_lo": m - 1.96 * se,
+                     "ci_hi": m + 1.96 * se, "pooled_r": np.corrcoef(x, y)[0, 1],
+                     "seeds": len(r_seed), "n": len(x)})
     axes[0].set_ylabel(r"measured change $\Delta$")
     return fig, pd.DataFrame(rows)
 
@@ -317,3 +326,143 @@ def fig_faithfulness_quadrant(faith, family="covariate"):
     fig.suptitle(f"Stability against faithfulness — {FAMILY_LABEL.get(family, family)} shift", y=1.04)
     return fig, q[["seed", "explainer", "faith_source", "faith_treat",
                    "ratio_all", "ratio_faithful", "corr_delta_faith"]]
+
+
+def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
+    """Fig 13. Per-point tracking against how far the update actually travelled.
+
+    The relationship is peaked at completeness 1, not monotone, so the panel is the argument: a
+    reader can see that tracking is recovered where the model finishes adapting and degrades again
+    once it overshoots. The semi-synthetic run is marked because it is the point that motivated the
+    sweep -- it lands on the curve rather than beside it.
+    """
+    fig, ax = plt.subplots(figsize=(4.0, 3.0))
+    for fam, marker in (("shortcut", "o"), ("concept", "s")):
+        q = adapt[adapt.family == fam]
+        if q.empty:
+            continue
+        g = q.groupby("update_epochs").agg(
+            completeness=("completeness", "mean"), r=("r", "mean"),
+            sd=("r", "std"), n=("r", "size")).reset_index()
+        err = 1.96 * g.sd / np.sqrt(g.n)
+        colour = PALETTE["delta"] if fam == "shortcut" else PALETTE["rho_null"]
+        ax.errorbar(g.completeness, g.r, yerr=err, marker=marker, ms=4, lw=1.0,
+                    capsize=2, color=colour, label=FAMILY_LABEL.get(fam, fam))
+        for _, x in g.iterrows():
+            ax.annotate(f"{int(x.update_epochs)}ep", (x.completeness, x.r),
+                        textcoords="offset points", xytext=(4, -9), fontsize=6, color=colour)
+
+    ax.axvline(1.0, color="0.4", ls="--", lw=0.8)
+    ax.text(1.02, ax.get_ylim()[0] + 0.04, "adaptation complete", fontsize=6, color="0.35")
+    ax.scatter(*semisynth_point, marker="*", s=90, color=PALETTE["omega"], zorder=5,
+               label="semi-synthetic (real covariates)")
+    ax.set_xlabel(r"adaptation completeness  $\mathbb{E}[\Delta]/\mathbb{E}[\omega]$")
+    ax.set_ylabel(r"per-point $r(\Delta,\omega)$")
+    ax.axhline(0.0, color="0.8", lw=0.6, zorder=0)
+    ax.legend(fontsize=6, loc="lower left")
+    rows = adapt.groupby(["family", "update_epochs"]).agg(
+        completeness=("completeness", "mean"), r=("r", "mean"), seeds=("r", "size")).reset_index()
+    return fig, rows
+
+
+def fig_share_model(rows):
+    """Fig 14. What predicts the optimiser share, and where DistilBERT sits relative to it."""
+    fig, axes = plt.subplots(1, 2, figsize=(6.6, 2.8))
+    scratch = rows[rows.pretrained == 0]
+
+    w = scratch[scratch.source == "mlp_width"]
+    g = w.groupby("n_params").share.agg(["mean", "std", "count"]).reset_index()
+    axes[0].errorbar(g.n_params, g["mean"], yerr=1.96 * g["std"] / np.sqrt(g["count"]),
+                     marker="o", ms=4, lw=1.0, capsize=2, color=PALETTE["rho_null"])
+    axes[0].set_xscale("log")
+    axes[0].set_xlabel("parameters")
+    axes[0].set_ylabel(r"optimiser share  $\rho_{\rm null}/\Delta$")
+    axes[0].set_title("capacity: no effect ($p=0.94$)")
+    axes[0].set_ylim(0, 1.05)
+
+    fit = scratch[scratch.agree.notna()]
+    axes[1].scatter(fit.agree, fit.share, s=6, alpha=0.25, color=PALETTE["rho_null"],
+                    edgecolors="none", label="from scratch")
+    pre = rows[rows.pretrained == 1]
+    axes[1].scatter(pre.agree, pre.share, s=40, marker="*", color=PALETTE["delta"],
+                    zorder=5, label="DistilBERT")
+    axes[1].set_xlabel("prediction agreement (update size)")
+    axes[1].set_title("update strength: monotone")
+    axes[1].set_ylim(0, 1.35)
+    axes[1].legend(fontsize=6, loc="lower left")
+    return fig, rows.groupby(["source", "pretrained"]).share.agg(["mean", "size"]).reset_index()
+
+
+def fig_faithfulness(fa, family="covariate"):
+    """Fig 11. The change is not faithfulness loss.
+
+    If attribution movement were the explainers becoming *wrong* rather than merely different, the
+    ratio would collapse once unfaithful points are dropped, and the movement would correlate with
+    the faithfulness drop. Neither happens, so the panel exists to show two near-identical bars and
+    a correlation cloud centred on zero.
+    """
+    q = fa[fa.family == family]
+    g = q.groupby("explainer").agg(
+        ratio_all=("ratio_all", "mean"), ratio_faithful=("ratio_faithful", "mean"),
+        corr=("corr_delta_faith", "mean")).reset_index().sort_values("explainer")
+
+    fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
+    x = np.arange(len(g))
+    axes[0].bar(x - 0.19, g.ratio_all, 0.38, color=PALETTE["delta"], label="all preserved points")
+    axes[0].bar(x + 0.19, g.ratio_faithful, 0.38, color=PALETTE["rho_null"],
+                label="faithful points only")
+    axes[0].axhline(1.0, color="0.4", ls="--", lw=0.8)
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels([label(n) for n in g.explainer], rotation=18, ha="right")
+    axes[0].set_ylabel(r"$\Delta/\rho_{\mathrm{null}}$")
+    axes[0].set_title("restricting to faithful points changes nothing — "
+                      f"{FAMILY_LABEL.get(family, family)}")
+    axes[0].legend(fontsize=6)
+
+    # The right panel spans *all* families, not just `family`: the text quotes the per-seed range
+    # over every row, and showing only one family here would put a different number in the panel
+    # from the one in the sentence beside it.
+    axes[1].axhline(0.0, color="0.4", ls="--", lw=0.8)
+    for i, (name, s) in enumerate(fa.groupby("explainer")):
+        axes[1].scatter(np.full(len(s), i), s.corr_delta_faith, s=10, alpha=0.5,
+                        color=PALETTE["omega"], edgecolors="none")
+    axes[1].set_xticks(np.arange(fa.explainer.nunique()))
+    axes[1].set_xticklabels([label(n) for n in sorted(fa.explainer.unique())],
+                            rotation=18, ha="right")
+    axes[1].set_ylabel(r"corr($\Delta$, faithfulness drop)")
+    axes[1].set_title(f"per seed, all families ({len(fa)} rows)")
+    axes[1].set_ylim(-0.6, 0.6)
+    return fig, fa.reset_index(drop=True)
+
+
+def fig_distributions(df, family="covariate", eps=0.05):
+    """Fig 10. Medians and interquartile ranges, not just means.
+
+    The audit asks for distribution panels because a mean ratio can hide a bimodal Delta. It does
+    not: the quartiles sit either side of the mean for every explainer.
+    """
+    q = _primary(df, family=family, eps=eps)
+    rows = []
+    for name, s in q.groupby("explainer"):
+        for key in ("nu", "rho_null", "rho_seed", "delta"):
+            v = s[key].values
+            rows.append({"explainer": name, "quantity": key, "median": np.median(v),
+                         "q25": np.percentile(v, 25), "q75": np.percentile(v, 75), "n": len(v)})
+    data = pd.DataFrame(rows)
+
+    names = sorted(q.explainer.unique())
+    fig, ax = plt.subplots(figsize=(1.15 * len(names) + 2.2, 3.0))
+    width = 0.2
+    for i, key in enumerate(("nu", "rho_null", "rho_seed", "delta")):
+        sub = data[data.quantity == key].set_index("explainer").reindex(names)
+        xs = np.arange(len(names)) + (i - 1.5) * width
+        ax.bar(xs, sub["median"], width, color=PALETTE[key], label=key)
+        ax.errorbar(xs, sub["median"],
+                    yerr=[sub["median"] - sub["q25"], sub["q75"] - sub["median"]],
+                    fmt="none", ecolor="0.25", elinewidth=0.7, capsize=1.8)
+    ax.set_xticks(np.arange(len(names)))
+    ax.set_xticklabels([label(n) for n in names], rotation=18, ha="right")
+    ax.set_ylabel(r"attribution change (median, IQR)")
+    ax.set_title(f"Distributions, not means — {FAMILY_LABEL.get(family, family)}")
+    ax.legend(ncol=4, fontsize=6, loc="upper center", bbox_to_anchor=(0.5, -0.22))
+    return fig, data
