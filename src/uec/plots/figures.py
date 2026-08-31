@@ -43,7 +43,7 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
     data = pd.DataFrame(rows)
 
     plotted = [n for n in names if n in set(data.explainer)]
-    fig, ax = plt.subplots(figsize=(1.25 * len(plotted) + 2.4, 3.2))
+    fig, ax = plt.subplots(figsize=(1.05 * len(plotted) + 2.0, 3.4))
     width = 0.2
     # Order matters: the headline quantity is Delta/rho_null, so those two bars sit adjacent. With
     # rho_seed between them the ratio bracket had to span a third bar and read as a property of the
@@ -61,7 +61,7 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
             for xi, v in zip(x, sub["mean"].values):
                 if v < 1e-9:
                     ax.text(xi, ax.get_ylim()[1] * 0.012, "0", ha="center", va="bottom",
-                            fontsize=6, color="0.35")
+                            fontsize=8, color="0.35")
 
     # The ratio is Delta/rho_null, so it is drawn over those two bars rather than over the group,
     # where it read as a property of the tallest bar (the seed floor) instead.
@@ -77,14 +77,14 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
         ax.annotate("", xy=(i + 0.5 * width, top * 1.05), xytext=(i + 1.5 * width, top * 1.05),
                     arrowprops=dict(arrowstyle="-", color=PALETTE["delta"], lw=0.8))
         ax.text(xc, top * 1.08, f"{r[0]:.2f}$\\times$", ha="center", va="bottom",
-                fontsize=7.2, color=PALETTE["delta"], fontweight="bold")
+                fontsize=9, color=PALETTE["delta"], fontweight="bold")
     ax.set_ylim(0, ymax)
 
     explainer_ticks(ax, plotted)
+    # No figure-level title: ICLR figures carry their description in the caption below, and a
+    # title here would repeat it and cost vertical space. Panel identifiers are kept elsewhere.
     ax.set_ylabel(r"attribution change (normalised $\ell_1$)")
-    ax.set_title(f"Explanation change against its floors — {FAMILY_LABEL.get(family, family)} shift"
-                 f" ($\\epsilon={eps}$)")
-    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.26))
+    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.24))
     return fig, data
 
 
@@ -92,7 +92,8 @@ def fig_update_strength(sweep, explainers=None):
     """The result the matched null buys: which control you choose reverses the conclusion."""
     df = sweep.copy()
     explainers = explainers or sorted(df.explainer.unique())
-    fig, axes = plt.subplots(1, len(explainers), figsize=(3.3 * len(explainers), 2.9), sharey=True)
+    fig, axes = plt.subplots(1, len(explainers), figsize=(2.9 * len(explainers), 3.0),
+                             sharey=True)
     axes = np.atleast_1d(axes)
     rows = []
 
@@ -114,13 +115,13 @@ def fig_update_strength(sweep, explainers=None):
         ax.set_title(label(name))
     axes[0].set_ylabel(r"$\Delta$ / floor")
     axes[-1].legend(loc="upper right")
-    fig.suptitle("Shift-induced change relative to the matched null and to the seed floor", y=1.03)
+    fig.tight_layout(w_pad=1.2)
     return fig, pd.DataFrame(rows)
 
 
 def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
     """Fig 3. Measured change against the warranted reference."""
-    fig, axes = plt.subplots(1, len(families), figsize=(3.2 * len(families), 2.9))
+    fig, axes = plt.subplots(1, len(families), figsize=(3.0 * len(families), 3.1))
     axes = np.atleast_1d(axes)
     rows = []
     for ax, fam in zip(axes, families):
@@ -161,7 +162,7 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
         ax.text(x.max() * 0.60, 0.118,
                 "measured change stays flat while\n"
                 rf"the reference spans ${np.percentile(x, 1):.2f}$–${np.percentile(x, 99):.2f}$",
-                fontsize=6.3, color="0.35", ha="center", va="center")
+                fontsize=8, color="0.35", ha="center", va="center")
         rows.append({"family": fam, "pearson_r": m, "ci_lo": m - 1.96 * se,
                      "ci_hi": m + 1.96 * se, "pooled_r": np.corrcoef(x, y)[0, 1],
                      "seeds": len(r_seed), "n": len(x)})
@@ -189,33 +190,50 @@ def fig_eps_sweep(df, family="covariate"):
     for ax in axes:
         ax.set_xlabel(r"prediction-preservation threshold $\epsilon$")
         ax.set_xscale("log")
-    axes[1].legend(ncol=2, fontsize=6.5)
-    fig.suptitle(f"Sensitivity to the preservation threshold — {FAMILY_LABEL.get(family, family)}",
-                 y=1.02)
+    axes[1].legend(ncol=2, fontsize=8.5)
     return fig, g
 
 
 def fig_theory(theory):
     """Fig 5. IG's aggregate is pinned by output change; gradient x input's is not."""
-    fig, axes = plt.subplots(1, 3, figsize=(8.2, 2.7))
+    fig, axes = plt.subplots(1, 3, figsize=(8.4, 3.0))
 
-    axes[0].hist(theory.ig_slack_max, bins=20, color=PALETTE["rho_null"])
-    axes[0].axvline(1.0, color=PALETTE["delta"], ls="--")
-    axes[0].set_xlabel("max IG slack per run")
-    axes[0].set_title("Prop. 1(i): IG aggregate bounded")
+    # Plotting raw slack put every run just above the 1.0 line and read as a universal
+    # violation, with tick labels colliding under matplotlib's "+1" offset. The bound is tested
+    # against each run's own quadrature tolerance, so that is what the axis shows: <1 means the
+    # excess is numerical, which is why the violation count is 0.
+    excess = (theory.ig_slack_max - 1.0) / theory.ig_quad_tol
+    axes[0].hist(excess, bins=20, color=PALETTE["rho_null"], edgecolor=BAR_EDGE, linewidth=0.4)
+    axes[0].axvline(1.0, color=PALETTE["delta"], ls="--", lw=1.2)
+    axes[0].set_xlabel("IG bound excess / quadrature tolerance")
+    axes[0].set_title("Prop. 1(i): within tolerance")
+    axes[0].text(0.03, 0.96, f"{int(theory.ig_violations.sum())} violations\nacross all runs",
+                 transform=axes[0].transAxes, ha="left", va="top", fontsize=8.5,
+                 color=PALETTE["rho_null"])
 
-    axes[1].hist(theory.gi_slack_median, bins=20, color=PALETTE["accent"])
-    axes[1].axvline(1.0, color=PALETTE["delta"], ls="--")
+    axes[1].hist(theory.gi_slack_median, bins=20, color=PALETTE["accent"],
+                 edgecolor=BAR_EDGE, linewidth=0.4)
+    axes[1].axvline(1.0, color=PALETTE["delta"], ls="--", lw=1.2)
     axes[1].set_xlabel(r"median Grad$\times$Input slack")
-    axes[1].set_title("Prop. 2: no aggregate bound")
+    axes[1].set_title("Prop. 2: bound broken")
+    axes[1].text(0.03, 0.96, f"{theory.gi_exceeds_one.mean():.0%} of points\nexceed the bound",
+                 transform=axes[1].transAxes, ha="left", va="top", fontsize=8.5,
+                 color=PALETTE["accent"])
 
     axes[2].hist(np.log10(theory.coal_ratio_median.clip(lower=1e-3)), bins=20,
-                 color=PALETTE["omega"])
-    axes[2].axvline(0.0, color=PALETTE["delta"], ls="--")
+                 color=PALETTE["omega"], edgecolor=BAR_EDGE, linewidth=0.4)
+    axes[2].axvline(0.0, color=PALETTE["delta"], ls="--", lw=1.2)
     axes[2].set_xlabel(r"$\log_{10}(\epsilon_{\mathrm{coal}}/\epsilon_{\mathrm{data}})$")
-    axes[2].set_title("Prop. 3 premise fails off-manifold")
+    axes[2].set_title("Prop. 3: premise fails")
+    axes[2].text(0.03, 0.96, "coalitions move\nfurther than the data",
+                 transform=axes[2].transAxes, ha="left", va="top", fontsize=8.5,
+                 color=PALETTE["omega"])
     for ax in axes:
         ax.set_ylabel("runs")
+        # Headroom so the annotation never sits on top of a bar: the tallest bar in each panel
+        # reaches the axis top otherwise, and the text was being struck through by it.
+        ax.set_ylim(0, ax.get_ylim()[1] * 1.42)
+    fig.tight_layout(w_pad=1.4)
     return fig, theory
 
 
@@ -225,7 +243,7 @@ def fig_invisibility(df, family="covariate", eps=0.05):
     q = q[q.explainer == "integrated_gradients"]
     cols = [("agree_treat", "prediction agreement"), ("acc_treat_tgt", "target accuracy"),
             ("ece_treat", "target ECE")]
-    fig, axes = plt.subplots(1, len(cols), figsize=(3.0 * len(cols), 2.7))
+    fig, axes = plt.subplots(1, len(cols), figsize=(2.8 * len(cols), 3.0))
     rows = []
     for ax, (c, name) in zip(np.atleast_1d(axes), cols):
         if c not in q:
@@ -237,7 +255,6 @@ def fig_invisibility(df, family="covariate", eps=0.05):
         ax.set_title(f"$r={r:.2f}$")
         rows.append({"covariate": c, "pearson_r": r, "n": len(q)})
     np.atleast_1d(axes)[0].set_ylabel(r"$\Delta$")
-    fig.suptitle("Explanation change against the quantities practitioners monitor", y=1.03)
     return fig, pd.DataFrame(rows)
 
 
@@ -261,10 +278,9 @@ def fig_distance_agreement(df, family="covariate", eps=0.05):
     ax.set_yticks(range(len(dists)), dists)
     for i in range(len(dists)):
         for j in range(len(dists)):
-            ax.text(j, i, f"{M[i, j]:.2f}", ha="center", va="center", fontsize=6.5)
+            ax.text(j, i, f"{M[i, j]:.2f}", ha="center", va="center", fontsize=8.5)
     ax.grid(False)
     fig.colorbar(im, ax=ax, shrink=0.8, label=r"Kendall $\tau$")
-    ax.set_title("Explainer-ranking agreement across distances")
     return fig, pd.DataFrame(M, index=dists, columns=dists).reset_index()
 
 
@@ -323,7 +339,6 @@ def fig_distributions(perpoint, family="covariate", explainers=None):
     axes[1].set_ylabel("ECDF")
     axes[1].set_title("Pooled over explainers")
     axes[1].legend(loc="lower right")
-    fig.suptitle(f"Per-point change distributions — {FAMILY_LABEL.get(family, family)} shift", y=1.03)
     return fig, pd.DataFrame(rows)
 
 
@@ -355,7 +370,6 @@ def fig_faithfulness_quadrant(faith, family="covariate"):
     axes[1].set_ylabel("restricted to faithful-to-both")
     axes[1].set_title("The effect does not depend on faithfulness")
     axes[1].legend(loc="upper left")
-    fig.suptitle(f"Stability against faithfulness — {FAMILY_LABEL.get(family, family)} shift", y=1.04)
     return fig, q[["seed", "explainer", "faith_source", "faith_treat",
                    "ratio_all", "ratio_faithful", "corr_delta_faith"]]
 
@@ -368,15 +382,15 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
     once it overshoots. The semi-synthetic run is marked because it is the point that motivated the
     sweep -- it lands on the curve rather than beside it.
     """
-    fig, ax = plt.subplots(figsize=(5.2, 3.4))
+    fig, ax = plt.subplots(figsize=(6.0, 3.8))
     ax.set_ylim(-0.32, 1.16)
 
     # Shade the two regimes. This is the claim of the panel, so it should be visible before any
     # marker is read.
     ax.axvspan(0, 1.0, color=PALETTE["rho_seed"], alpha=0.10, zorder=0)
     ax.axvline(1.0, color="0.35", ls="--", lw=0.9, zorder=1)
-    ax.text(0.99, 1.11, "under-adapted", ha="right", va="top", fontsize=6.5, color="0.35")
-    ax.text(1.03, 1.11, "overshoot", ha="left", va="top", fontsize=6.5, color="0.35")
+    ax.text(0.99, 1.11, "under-adapted", ha="right", va="top", fontsize=8.5, color="0.35")
+    ax.text(1.03, 1.11, "overshoot", ha="left", va="top", fontsize=8.5, color="0.35")
 
     # Points bunch near completeness 1, so a single offset per family collides. Offsets are given
     # per point, placed away from the neighbouring marker rather than uniformly.
@@ -403,7 +417,7 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
             dx, dy = label_offsets[fam].get(int(x.update_epochs), (0, 11))
             ax.annotate(f"{int(x.update_epochs)}ep", (x.completeness, x.r),
                         textcoords="offset points", xytext=(dx, dy), ha="center",
-                        fontsize=6.2, color=colour)
+                        fontsize=8, color=colour)
 
     # The semi-synthetic run motivated the sweep, so it is marked -- offset from the curve and
     # leadered, because at completeness 1.09 it sits directly on top of the 100ep marker.
@@ -413,7 +427,7 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
     ax.scatter(sx, sy, marker="*", s=170, facecolor=PALETTE["omega"], edgecolor="0.15",
                linewidth=0.7, zorder=6, label="semi-synthetic (real covariates)")
     ax.annotate("real covariates\nland on the curve", xy=(sx, sy), xytext=(1.72, 0.74),
-                fontsize=6.5, color=PALETTE["omega"], ha="left", va="center",
+                fontsize=8.5, color=PALETTE["omega"], ha="left", va="center",
                 arrowprops=dict(arrowstyle="-", color=PALETTE["omega"], lw=0.7,
                                 connectionstyle="arc3,rad=-0.2"))
 
@@ -423,7 +437,7 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
     ax.set_xlim(0.12, 3.32)
     # Below the axes: every in-panel position collided with either the concept curve's 400ep
     # marker or the leader line to the semi-synthetic star.
-    ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=3)
+    ax.legend(fontsize=8.5, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=3)
     rows = adapt.groupby(["family", "update_epochs"]).agg(
         completeness=("completeness", "mean"), r=("r", "mean"), seeds=("r", "size")).reset_index()
     return fig, rows
@@ -431,7 +445,7 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
 
 def fig_share_model(rows):
     """Fig 14. What predicts the optimiser share, and where DistilBERT sits relative to it."""
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0))
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.3))
     scratch = rows[rows.pretrained == 0]
 
     w = scratch[scratch.source == "mlp_width"]
@@ -447,7 +461,7 @@ def fig_share_model(rows):
     axes[0].annotate("", xy=(g.n_params.iloc[0], 0.86), xytext=(g.n_params.iloc[-1], 0.86),
                      arrowprops=dict(arrowstyle="<->", color="0.45", lw=0.7))
     axes[0].text(np.sqrt(g.n_params.iloc[0] * g.n_params.iloc[-1]), 0.885,
-                 "no trend", ha="center", fontsize=6.5, color="0.4")
+                 "no trend", ha="center", fontsize=8.5, color="0.4")
 
     fit = scratch[scratch.agree.notna()]
     axes[1].scatter(fit.agree, fit.share, s=7, alpha=0.22, color=PALETTE["rho_null"],
@@ -471,14 +485,14 @@ def fig_share_model(rows):
                     edgecolor="white", linewidth=0.5, zorder=6, label="DistilBERT (66.9M)")
     axes[1].annotate(f"+{0.173:.2f} above the curve\nat matched update size",
                      xy=(pre.agree.mean(), pre.share.mean()), xytext=(0.76, 1.18),
-                     fontsize=6.5, color=PALETTE["delta"], ha="left", va="center",
+                     fontsize=8.5, color=PALETTE["delta"], ha="left", va="center",
                      arrowprops=dict(arrowstyle="->", color=PALETTE["delta"], lw=0.8,
                                      connectionstyle="arc3,rad=0.15"))
     axes[1].set_xlabel("prediction agreement (update size)")
     axes[1].set_ylabel(r"optimiser share  $\rho_{\mathrm{null}}/\Delta$")
     axes[1].set_title("update strength: monotone")
     axes[1].set_ylim(0, 1.38)
-    axes[1].legend(fontsize=6.3, loc="lower left")
+    axes[1].legend(fontsize=8, loc="lower left")
     fig.tight_layout(w_pad=2.0)
     return fig, rows.groupby(["source", "pretrained"]).share.agg(["mean", "size"]).reset_index()
 
@@ -496,7 +510,7 @@ def fig_faithfulness(fa, family="covariate"):
         ratio_all=("ratio_all", "mean"), ratio_faithful=("ratio_faithful", "mean"),
         corr=("corr_delta_faith", "mean")).reset_index().sort_values("explainer")
 
-    fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.3))
     x = np.arange(len(g))
     axes[0].bar(x - 0.19, g.ratio_all, 0.38, color=PALETTE["delta"], hatch=HATCH["delta"],
                 edgecolor=BAR_EDGE, linewidth=0.4, label="all preserved points")
@@ -508,7 +522,7 @@ def fig_faithfulness(fa, family="covariate"):
     axes[0].set_ylabel(r"$\Delta/\rho_{\mathrm{null}}$")
     axes[0].set_title("restricting to faithful points changes nothing\n"
                       f"({FAMILY_LABEL.get(family, family)} shift)")
-    axes[0].legend(fontsize=6)
+    axes[0].legend(fontsize=8)
 
     # The right panel spans *all* families, not just `family`: the text quotes the per-seed range
     # over every row, and showing only one family here would put a different number in the panel
@@ -523,36 +537,3 @@ def fig_faithfulness(fa, family="covariate"):
                       f"per seed, all families ({len(fa)} rows)")
     axes[1].set_ylim(-0.6, 0.6)
     return fig, fa.reset_index(drop=True)
-
-
-def fig_distributions(df, family="covariate", eps=0.05):
-    """Fig 10. Medians and interquartile ranges, not just means.
-
-    The audit asks for distribution panels because a mean ratio can hide a bimodal Delta. It does
-    not: the quartiles sit either side of the mean for every explainer.
-    """
-    q = _primary(df, family=family, eps=eps)
-    rows = []
-    for name, s in q.groupby("explainer"):
-        for key in ("nu", "rho_null", "rho_seed", "delta"):
-            v = s[key].values
-            rows.append({"explainer": name, "quantity": key, "median": np.median(v),
-                         "q25": np.percentile(v, 25), "q75": np.percentile(v, 75), "n": len(v)})
-    data = pd.DataFrame(rows)
-
-    names = sorted(q.explainer.unique())
-    fig, ax = plt.subplots(figsize=(1.15 * len(names) + 2.2, 3.0))
-    width = 0.2
-    for i, key in enumerate(("nu", "rho_null", "rho_seed", "delta")):
-        sub = data[data.quantity == key].set_index("explainer").reindex(names)
-        xs = np.arange(len(names)) + (i - 1.5) * width
-        ax.bar(xs, sub["median"], width, color=PALETTE[key], hatch=HATCH[key],
-               edgecolor=BAR_EDGE, linewidth=0.4, label=QUANTITY_LABEL[key])
-        ax.errorbar(xs, sub["median"],
-                    yerr=[sub["median"] - sub["q25"], sub["q75"] - sub["median"]],
-                    fmt="none", ecolor="0.25", elinewidth=0.7, capsize=1.8)
-    explainer_ticks(ax, names)
-    ax.set_ylabel(r"attribution change (median, IQR)")
-    ax.set_title(f"Distributions, not means — {FAMILY_LABEL.get(family, family)}")
-    ax.legend(ncol=4, fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, -0.26))
-    return fig, data
