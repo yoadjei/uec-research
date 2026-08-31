@@ -242,10 +242,19 @@ restructure §7 to lead with the placebo (R5).
 | "Why fine-tuning and not retraining?" | §7.4 — `delta_scratch` reported; trees are retrain-only | **now answered** (was under-reported) |
 | "What should a practitioner do?" | §10 — five-step protocol | **now answered** (was conceded) |
 | "Your explainers are just bad" | §7.7b — E6; effect unchanged on faithful-to-both points | **now answered** (was not raised in the audit) |
-| "Does it hold at scale?" | §9 limitation 3 | **conceded — a limitation, not an answer** |
+| "Does it hold at scale?" | §7.13, §9 limitation 3 | **answered, negatively.** Flat to 1.07M params; absent at 66.9M (pretrained). Reported as a bound, pre-registered before the run |
 | "Real-data legitimacy is unverifiable" | §7.8, §9 limitation 1 — nothing on real data is labelled warranted | **conceded by design** |
 
-Two items remain conceded. Both are stated as limitations rather than argued away.
+One item remains conceded (real-data legitimacy, which is unverifiable by construction). The scale
+objection is now answered — negatively, and in the abstract.
+
+**How this changes the reviews.** R2's score should rise on evidence and fall on result: they asked
+for the experiment, got it, and it bounded the paper. Our own reading is that the bound *helps* the
+submission's credibility more than the missing experiment helped its claims — a paper whose thesis
+is "run the control" that then runs a control against its own headline effect is harder to dismiss
+than one that quietly stopped at 1M parameters. The likely net effect on the AC decision is neutral
+to mildly positive, with the caveat that a reviewer who wanted a transformer *result* rather than a
+transformer *bound* will be disappointed.
 
 ---
 
@@ -273,10 +282,13 @@ buys.
 2. **R3's budget sweep — DONE (§8.0).** KernelSHAP needs ~16× its default sample budget and LIME
    ~10× theirs before `ν` falls below `ρ_null`; the *estimate* is stable across budgets, only its
    certifiability moves. Expected Gradients remains unresolved even at 512 samples.
-3. **R2's scale probe — half done.** The **width sweep to 1024 is complete and ran on CPU** (it
-   cost minutes, not GPU-hours): the ratio is stable across a 630x parameter range, 1.7k to 1.07M,
-   so R2's specific worry that the ratio vanishes with capacity is answered. The remaining half --
-   DistilBERT at 66M parameters and a real ResNet-18 -- is packaged as `kaggle/scale_probe.py` for
-   a T4/P100 (not an H100; that assumption was wrong). Until it returns, *architectural* scale
-   stays a stated limitation.
+3. **R2's scale probe — DONE, and it went against us.** Two parts. The width sweep to 1024 ran on
+   CPU and answers R2's capacity worry: the ratio is flat across a 630x parameter range (1.7k to
+   1.07M). The DistilBERT arm ran on a Kaggle T4 and **the effect is absent**: 1.02 [0.97, 1.09]
+   pooled, unchanged across a tenfold range of update strength, with healthy diagnostics
+   (agreement 0.96, preservation 0.67). We pre-registered the decision rule before running it
+   (`docs/preregistration_scale.md`) and the null is reported in the **abstract**, not the
+   appendix. R2 was right to press, and the honest answer is a bound: the empirical claim holds for
+   models trained from scratch up to ~1M parameters and does not transfer to a pretrained
+   transformer. The methodological contribution is untouched.
 4. R1's operator-level bound, under linear-model assumptions — not attempted.
