@@ -7,9 +7,9 @@ hide inside a paragraph.
 Legend: **✓** done · **✓+** done and extended · **~** done differently (reason given) · **✗** not
 done · **—** the audit itself says to drop it
 
-Counts: **147 actionable items · 136 ✓ · 9 ✓+ · 6 ~ · 1 ✗ · 12 —**
+Counts: **147 actionable items · 137 ✓ · 9 ✓+ · 6 ~ · 0 ✗ · 12 —**
 
-The single remaining ✗ is **scale** (§31 Version C), which needs a GPU and is Phase D.
+Every item is now discharged. Scale (§31 Version C) was the last, and it came back **negative**: the effect does not transfer to a pretrained transformer, which the paper reports as a bound rather than a gap.
 
 ---
 

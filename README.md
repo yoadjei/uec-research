@@ -83,6 +83,10 @@ regime, seed and checkpoint weight hash.
   seed floor reports 1.90.
 - **Not a gradient artefact.** The effect is largest for trees with exact TreeSHAP (2.08), and holds
   for MLPs, trees and a small CIFAR ResNet across seven attribution methods.
+- **But it is bounded.** Flat at ~1.4 across a 630x parameter range within models trained from
+  scratch (1.7k to 1.07M), and **absent** in a pretrained DistilBERT at 66.9M: 1.02 [0.97, 1.09],
+  unchanged across a tenfold range of update strength. Whether that is scale or pretraining is
+  unresolved.
 - **Magnitude says nothing about legitimacy.** For six of seven explainers, change relative to the
   matched null is statistically indistinguishable between a shift that leaves the Bayes-optimal
   predictor untouched and one that rewrites it (IG: p = 0.56).
