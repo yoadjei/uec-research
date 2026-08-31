@@ -224,8 +224,7 @@ def run_vision(seeds=3, n_source=20000, n_add=10000, n_probe=400, epochs=8,
         return np.concatenate(out)
 
     for seed in range(seeds):
-        todo = [x for x in lrs if (seed, float(x)) not in done]
-        if not todo:
+        if seed in seen:
             continue
         t0 = time.time()
         rng = np.random.default_rng(seed)
@@ -511,6 +510,25 @@ def run_text(seeds=3, n_source=5000, n_add=2000, n_probe=250, lr=2e-5, update_lr
     df = pd.DataFrame(rows)
     _report(df, "DistilBERT  IMDB -> Rotten Tomatoes")
     return df
+
+
+REQUIRES = {
+    "width": ["captum", "shap", "lime"],       # goes through the full explainer registry
+    "vision": ["captum", "torchvision"],
+    "text": ["captum", "transformers", "datasets"],
+}
+
+
+def check_deps(tasks):
+    """Fail before the data downloads, not forty minutes in."""
+    import importlib.util
+
+    missing = sorted({m for t in tasks for m in REQUIRES[t]
+                      if importlib.util.find_spec(m) is None})
+    if missing:
+        print(f"\nERROR: missing modules for task(s) {', '.join(tasks)}: {', '.join(missing)}")
+        print(f"\n    !pip install -q {' '.join(missing)}\n")
+        sys.exit(1)
 
 
 def main():
