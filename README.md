@@ -88,12 +88,14 @@ manifest so those hashes can be verified.
   explanation moved explains ~1% of the variance in how far it *should* have moved (r = +0.12
   [0.08, 0.16] under concept shift, −0.10 [−0.19, −0.02] under shortcut removal, 7.5k points). The
   per-explainer version is underpowered at ten seeds and is not read as equivalence; LIME differs.
-- **That result does not transfer, and we say so.** Repeated on real ACS covariates with a mechanism
-  known by construction, the same measurement gives r = +0.81 and 65% of the variance — the opposite
-  conclusion. Update strength, sample size, feature redundancy and pure-noise features were each
-  manipulated and none closes the gap. ω's machinery does transfer: exact to 1.1e-14 against
-  quadrature on real rows, and exactly 0 under a covariate tilt calibrated to the synthetic shift's
-  domain AUC (0.906 vs 0.902).
+- **…and that holds only under light updates.** On real ACS covariates with a mechanism known by
+  construction the same measurement gives r = +0.81. The cause is not the covariates but how far the
+  model travelled: sweeping the update budget on the generator carries r from +0.15 to **+0.882** as
+  Δ/ω passes through 1, then back to +0.51 on overshoot. Magnitude becomes informative about
+  legitimacy only once the update is heavy enough to move predictions visibly — it fails exactly in
+  the regime auditors work in.
+- **ω itself transfers.** Exact to 1.1e-14 against quadrature on real rows, and exactly 0 under a
+  covariate tilt calibrated to the synthetic shift's domain AUC (0.906 vs 0.902).
 - **Two published metrics get it backwards.** Reimplemented on the same checkpoints, a FASS-style
   filtered distance and Delta-Audit's spurious residual rank correct adaptation as 45% and 89%
   *worse* than unwarranted drift. UEC gives them opposite signs.
