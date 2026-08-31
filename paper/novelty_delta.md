@@ -123,7 +123,7 @@ prediction stability. Not in MCal.
 |---|---|---|
 | 1 | A warranted-change reference ω defined against the **Bayes-optimal predictor per environment**, exact in closed form | §4; ω = 0 bitwise under covariate shift, 0.326 under shortcut removal |
 | 2 | The **matched-operator null** — a control targeted searches found nowhere in this literature | §7.3; reverses the ordering that the seed floor gives |
-| 3 | Magnitude of attribution change is **uninformative about legitimacy** | §7.4; IG: 0.0398 vs 0.0386, p = 0.63, across ω = 0 vs ω = 0.33 |
+| 3 | Attribution magnitude tracks legitimacy **only when the update completes the adaptation** | §7.5, §7.16; per-point r = +0.15 at completeness 0.25 rising to +0.88 at 0.99 |
 | 4 | Prior metrics rank **correct adaptation as worse** than unwarranted drift | §7.5; FASS-style +45%, Delta-Audit spurious +89% |
 | 5 | Method-class asymmetry with a sharpness construction, and the negative half nobody states: the *allocation* is unprotected in every class | §5, §7.6; 0/20,000 IG violations, 60.8% Grad×Input |
 | 6 | Coalition-level deviation between checkpoints measured, not assumed | §7.6 |
