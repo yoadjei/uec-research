@@ -42,6 +42,10 @@ STAGES = [
     ("ACS years", "run_folktables.py", ["--target-year", "2022"],
      "folktables_year_metrics.parquet", 25, False),
     ("vision", "run_vision.py", [], "vision_metrics.parquet", 40, False),
+    ("semi-synthetic ACS", "run_semisynthetic.py", ["--seeds", "10"],
+     "semisynthetic_metrics.parquet", 12, False),
+    ("redundancy sweep", "run_redundancy.py", ["--seeds", "8"],
+     "redundancy_sweep.parquet", 6, False),
 ]
 
 BUILDERS = [("tables", "make_tables.py"), ("figures", "make_figures.py"),
