@@ -30,7 +30,7 @@ src/uec/
   plots/       figure builders
 experiments/   runners; each writes a parquet to results/
 docs/          spec.md (the contract), theory.md (proofs), lit_matrix.csv, terminology_map.md
-tests/         89 tests, including numeric verification of every proposition
+tests/         101 tests, including numeric verification of every proposition
 ```
 
 ## Install
@@ -46,18 +46,19 @@ committed under `results/` because it cannot be regenerated locally.
 ## Reproduce
 
 ```bash
-pytest tests/ -q                          # 97 tests, including the proposition checks
+pytest tests/ -q                          # 101 tests, including the proposition checks
 
 python experiments/reproduce.py --list    # the plan, with per-stage timings
 python experiments/reproduce.py --quick   # headline result only, ~15 min
 python experiments/reproduce.py           # everything, ~4.5 h on 8 CPU cores
 ```
 
-`reproduce.py` runs all twelve stages in dependency order, skips any whose output already exists
+`reproduce.py` runs all fourteen stages in dependency order, skips any whose output already exists
 (so an interrupted run resumes), then rebuilds every table and figure. Individual stages still run
 directly — `run_synthetic.py`, `sweep_regime.py`, `run_trees.py`, `run_differentiation.py`,
 `run_faithfulness.py`, `run_ablations.py`, `run_budget_sweep.py`, `run_reaudit.py`,
-`run_folktables.py`, `run_vision.py`.
+`run_folktables.py`, `run_vision.py`, `run_semisynthetic.py`, `run_redundancy.py`,
+`run_adaptation.py`.
 
 Figures and tables are committed, so a fresh clone already has them. `make_tables.py` and
 `make_figures.py` **refuse to run** when `results/` is empty rather than silently overwriting the
@@ -73,11 +74,13 @@ manifest so those hashes can be verified.
   all seven explainers move more than their matched null (ratios 1.02–1.73, Holm-adjusted p = 0.014,
   Cliff's δ up to +0.98). The no-shift placebo returns 1.00–1.10 with every interval covering 1.
 - **The control decides the answer.** As updates get heavier, change relative to the matched null
-  *falls* (1.81 → 1.09) while change relative to the seed floor *rises* (0.11 → 1.07). Prior work's
-  implicit control orders the regimes backwards.
-- **On a no-shift placebo the seed floor invents an effect.** With gradient-boosted trees and exact
-  TreeSHAP, and nothing shifted at all, the matched null reports 0.98 (not significant) while the
-  seed floor reports 1.90.
+  *falls* (1.81 → 1.09 for IG at shift 1.5, lr 2e-4) while change relative to the seed floor *rises*
+  (0.11 → 1.07). The opposite ordering holds in **24 of 24** explainer × magnitude × lr cells.
+- **On a no-shift placebo the seed floor's bias flips sign with the model class.** Nothing shifted at
+  all: the matched null reports 1.02 (MLP) and 0.98 (trees, exact TreeSHAP), while the seed floor
+  reports **0.32 and 1.90** — a sixfold self-disagreement, so no fixed correction recovers it.
+  Against that seed floor our own headline effect is inverted (median 0.31), which we state in §7.3
+  rather than leave to be found.
 - **Not a gradient artefact.** The effect is largest for trees with exact TreeSHAP (2.08), and holds
   for MLPs, trees and a small CIFAR ResNet across seven attribution methods.
 - **But it is bounded.** Flat at ~1.4 across a 630x parameter range within models trained from
