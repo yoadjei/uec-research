@@ -22,12 +22,13 @@ at all. Across 681 runs the matched null reproduces a median **82%** of the attr
 follows an update, so most of what is reported as shift-induced instability is the optimiser.
 Unwarranted change is largest for *light* updates, where predictions are best preserved.
 
-The sharpest demonstration is a no-shift placebo: on gradient-boosted trees with exact TreeSHAP,
-where nothing whatsoever has shifted, the matched null correctly reports a ratio of 0.98 while the
-seed floor reports 1.90 — manufacturing a near-two-fold effect out of nothing. We state the
-consequence for our own results rather than leaving it to be discovered: against that seed floor our
-headline effect is *inverted* (median 0.31), and the case for reading it against the matched null
-instead rests on the placebo, whose correct answer is fixed in advance.
+The sharpest demonstration is a no-shift placebo, where the correct answer is fixed by construction.
+With nothing shifted at all, the matched null returns 1.02 on an MLP and 0.98 on gradient-boosted
+trees with exact TreeSHAP; the seed floor returns **0.32 and 1.90** on the same data — disagreeing
+with itself sixfold and erring in opposite directions, so no fixed correction recovers it. We state
+the consequence for our own results rather than leaving it to be discovered: against that seed floor
+our headline effect is *inverted* (median 0.31), and the case for the matched null rests on the
+placebo rather than on the shift results it is used to interpret.
 
 We then apply the missing control to a published audit. Re-running Delta-Audit's 45 reported
 settings with a matched null, 64% of them produce attribution movement *smaller* than refitting the
@@ -387,11 +388,21 @@ qualification of it.
 The obvious suspicion is that we adopted whichever control produced the answer we wanted. Three
 things speak against that, and the first is decisive because its ground truth is fixed in advance:
 
-1. **The placebo has a known answer, and only one control gets it right.** With gradient-boosted
-   trees, exact TreeSHAP, and *nothing shifted whatsoever*, the correct report is "no effect". The
-   matched null returns 0.98 (interval covering 1); the seed floor returns **1.90** (§7.2). A control
-   that manufactures a two-fold effect out of an unshifted placebo cannot be used to certify effects
-   under shift. This test does not depend on any shift result and was specified before them.
+1. **The placebo has a known answer, and only one control gets it right — on both model classes.**
+   With *nothing shifted whatsoever*, the correct report is "no effect", i.e. a ratio of 1.00. Run on
+   two model classes that share nothing but the protocol:
+
+   | no-shift placebo | Δ/ρ_null | Δ/ρ_seed |
+   |---|---|---|
+   | MLP (synthetic) | 1.02 | **0.32** |
+   | Gradient-boosted trees, exact TreeSHAP | 0.98 | **1.90** |
+
+   The matched null returns the right answer on both, varying by 0.04. The seed floor disagrees with
+   itself by a factor of **six**, and errs in *opposite directions* — understating threefold on the
+   MLP, overstating twofold on the trees. This is the decisive point: the seed floor is not a
+   conservative reference that merely costs power, it is one whose bias flips sign with the model
+   class, so no fixed correction recovers it. The test does not depend on any shift result, and its
+   correct answer is fixed by construction rather than chosen after the fact.
 2. **The comparison is not like-for-like.** ρ_seed retrains from scratch — 60 epochs on 8,000 points
    — while the update is 20 epochs on 4,000. Δ/ρ_seed therefore compares a fine-tune against a
    from-scratch retrain, which differ in operator, data volume and step count simultaneously. ρ_null
