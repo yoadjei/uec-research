@@ -141,29 +141,43 @@ cannot wave away: on data where nothing shifted, the control that this literatur
 1.90× effect. If that is right, a number of published claims are measuring their own training
 procedure.
 
-The result I also cannot dismiss is §7.4: attribution change of statistically indistinguishable
-magnitude whether the mechanism moved or not (p = 0.56 controlled, 0.63 raw), because that is a
-statement about what these methods can support, not about how much they wobble.
+**The number I went looking for, and found already reported.** My first move on a paper like this is
+to compute the effect against the control the field actually uses. It is 0.31 — the headline effect
+is *inverted* against the seed floor. I expected to find this buried; instead §7.3 states it in the
+main text and in the abstract, and argues the denominator rather than hiding the numerator. I do not
+fully like the argument, but I cannot call it concealment, and the placebo does most of the work: a
+control that reports 1.90 on data where nothing shifted is not a control. The authors' own summary —
+"this paper reports a smaller effect than the literature it critiques, against a stricter control" —
+is the correct framing and I would keep it.
 
-Remaining complaints, and they are real. The headline ratios are 1.4–2.1, not 5; the paper is
-disciplined about this but the framing still leans on "×" language. Warranted change on real data is
-unverifiable and the authors concede it, which leaves §7.8 as "direction replicates" rather than
-evidence for the central claim. The effect is largest for the *lightest* updates, which invites the
-reply that a 1-epoch update is barely an update — the paper answers this (predictions are 98%
-preserved there, and light incremental fine-tuning is the common deployment pattern) but the answer
-should be in the introduction, not §7.3.
+**Where I remain unconvinced.** The placebo now runs on two model classes and the result is stronger
+than the authors' original framing: ρ_seed returns 0.32 on the MLP and 1.90 on the trees for the same
+no-shift condition, so its bias flips sign with the model class. That is a better argument than
+"it manufactures effects" and it should lead §7.3. What is still missing is a third point — the
+ResNet arm has no placebo — and with two points one cannot say whether the sign flip tracks model
+class, explainer, or something else.
 
-And I want to be sure the covariate/shortcut contrast in §7.4 is fair. The two conditions use
-different source models. The authors saw this and normalised each by its own matched null, which is
-the right fix, and 6 of 7 explainers are then indistinguishable. Good — but say it in the main text
-before the raw comparison, not after.
+**On H2.** The earlier draft I saw claimed magnitude was uninformative about legitimacy, on a p = 0.56
+that was a failure to reject with ten seeds. That has been withdrawn and replaced by something
+better: §7.16 shows per-point tracking is governed by adaptation completeness, running from +0.15 to
++0.88 as Δ/ω passes through 1, with the semi-synthetic value recovered on the generator. This is now
+a mechanism rather than an anecdote, and the honest scoping — magnitude fails *in the light-update
+regime auditors work in* — is more useful than the original overclaim.
 
-**Novelty.** Moderate-to-good, conditional on §7.4 and the placebo surviving scrutiny.
+Remaining complaints, and they are real. The headline ratios are 1.4–2.1, not 5, and the framing
+still leans on "×" language. Warranted change on real data is unverifiable; §7.15 pushes this as far
+as it goes but a known mechanism over real covariates is still a constructed mechanism. The effect is
+largest for the *lightest* updates, which invites the reply that a 1-epoch update is barely an update
+— the paper answers this (98% prediction preservation, and light incremental fine-tuning is the
+common deployment pattern) but the answer belongs in the introduction, not §7.3. And the paper is
+long; §7 now has sixteen subsections and the argument is harder to hold than it was.
+
+**Novelty.** Moderate-to-good. The matched null plus the re-audit in §7.7 — which applies the control
+to 45 published settings and reverses the reading of 64% of them — is a demonstrated correction of
+the record, not just a methodological proposal. That is what moves me.
 **Score 6, confidence 4.**
-**What would raise my score:** an audit of one *published* result using the matched null — take a
-setting from Delta-Audit or the chest X-ray paper, add the control, and show the reported
-conclusion changes. That converts a methodological argument into a demonstrated correction of the
-record, and it is the highest-value experiment left in this project.
+**What would raise my score:** run the no-shift placebo on the MLP and ResNet arms too. The whole
+argument for the new control rests on it, and it currently exists at one point in the design.
 
 ---
 
@@ -201,7 +215,7 @@ strengthen the paper's actual claims, which are qualitative:
 
 1. the control inversion (§7.3) and the tree placebo (§7.8c) — the standard control manufactures a
    1.90× effect where nothing shifted;
-2. magnitude is uninformative about legitimacy (§7.4);
+2. magnitude tracks legitimacy only once the update completes the adaptation (§7.5, §7.16);
 3. two published metrics rank correct adaptation as worse than drift (§7.5);
 4. the effect is not faithfulness loss (§7.7b) and not collinearity (§8).
 
