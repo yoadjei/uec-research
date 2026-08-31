@@ -645,7 +645,33 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
-### 7.13 Vision sanity check (T9, Fig. 9)
+### 7.13 Transformer scale: an unresolved null (T15, Fig. 12)
+
+The largest model we tested is DistilBERT (66.9M parameters), fine-tuned on IMDB and updated
+additively with either more IMDB (matched null) or Rotten Tomatoes (treatment), with token-level
+attributions on the embedding layer. Three seeds, 250-example probe.
+
+**The effect does not appear.** Integrated Gradients gives a ratio of **0.985 [0.946, 1.038]** and
+Grad×Input **1.035 [1.015, 1.052]**, against 1.36–1.73 for every other model class we measured. The
+diagnostics are healthy — prediction agreement 0.908, 61% of probe points preserved — so this is a
+clean null rather than a failed measurement.
+
+We do **not** report it as a scale bound, because it is confounded with update strength and our own
+data supplies the confound. The DistilBERT update was heavy: the entire source set replayed
+alongside the new data. §7.3 shows the ratio collapsing toward 1 as updates grow, in every model
+class, whether or not anything shifted — and at DistilBERT's agreement of 0.908 our *20-dimensional
+MLPs* already read 1.05–1.13. The observation is therefore equally consistent with the phenomenon
+being absent at transformer scale and with the update being too large to see it through.
+
+The disambiguating experiment sweeps update strength at 66M parameters, comparing against the
+tabular curve **at matched prediction agreement** rather than matched learning rate. The
+interpretation of each possible outcome was fixed before running it
+(`docs/preregistration_scale.md`), including the commitment to report a scale bound in the abstract
+if that is what the data says. This section will be completed either way; at present the honest
+statement is that the largest model we tested shows no effect under one update regime, and we do
+not yet know why.
+
+### 7.14 Vision sanity check (T9, Fig. 9)
 
 CIFAR-10, a 78k-parameter ResNet, 3 seeds, additive update (the model is fine-tuned on its old data
 plus new data that is either clean or corrupted). This is a sanity check, not a benchmark: FASS and
@@ -778,9 +804,14 @@ effect; we are reading the one the argument requires.
 2. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
-3. **Scale.** MLPs, gradient-boosted trees, and a 78k-parameter CIFAR ResNet, all on CPU.
-   Nothing here is evidence about LLMs or large vision transformers, and the fine-tuning-stability
-   literature gives reason to think optimisation transients change qualitatively with scale.
+3. **Scale — the sharpest open question, and it may be a bound rather than a gap.** The effect is
+   stable across a 630× parameter range within MLPs (1.7k → 1.07M, §8.1) and holds for trees and a
+   small CNN. But on DistilBERT at 66.9M parameters it **disappears** (0.985 [0.946, 1.038], §7.13).
+   That measurement is confounded with update strength and the disambiguating sweep is pending, so
+   we currently claim the phenomenon for MLPs, gradient-boosted trees and small CNNs, and claim
+   nothing about transformers. If the sweep confirms the null, the correct statement is that the
+   phenomenon is bounded to smaller models — and we have pre-committed to reporting that in the
+   abstract.
 4. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
 5. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
    ratios are uninformative rather than null, and larger sample budgets would change them.
