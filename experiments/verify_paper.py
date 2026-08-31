@@ -160,6 +160,18 @@ def main():
         c("7.5 per-point variance explained (max)", pp.r2.max(), 0.015, tol=0.002,
           source="T17b_per_point")
 
+    sm = load("T16_share_model.csv", TABLES)
+    if sm is not None:
+        s = sm.iloc[0]
+        c("7.12b capacity slope", s.capacity_slope, -0.007, tol=0.005, source="T16_share")
+        c("7.12b capacity p", s.capacity_p, 0.94, tol=0.01, source="T16_share")
+        c("7.12b update slope", s.update_slope, -9.13, tol=0.05, source="T16_share")
+        c("7.13 DistilBERT predicted share", s.predicted_share, 0.843, tol=0.005,
+          source="T16_share")
+        c("7.13 DistilBERT observed share", s.observed_share, 0.964, tol=0.005, source="T16_share")
+        c("7.13 DistilBERT excess over curve", s.excess, 0.173, tol=0.005, source="T16_share")
+        c("7.13 excess CI lower", s.excess_lo, 0.104, tol=0.005, source="T16_share")
+
     ss = load("semisynthetic_metrics.parquet")
     if ss is not None:
         cov = ss[(ss.family == "covariate") & (ss.explainer == "integrated_gradients")]
