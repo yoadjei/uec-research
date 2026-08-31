@@ -119,6 +119,10 @@ def main():
     if syn is not None:
         fig, data = F.fig_headline(syn)
         made.append(save(fig, FIGURES / "fig2_headline.png", data))
+        fig, data = F.fig_headline(syn, family="shortcut")
+        made.append(save(fig, FIGURES / "fig2c_shortcut.png", data))
+        fig, data = F.fig_distributions(syn)
+        made.append(save(fig, FIGURES / "fig10_distributions.png", data))
         fig, data = F.fig_eps_sweep(syn)
         made.append(save(fig, FIGURES / "fig4_eps_sweep.png", data))
         fig, data = F.fig_invisibility(syn)
@@ -140,6 +144,19 @@ def main():
     if vis is not None:
         fig, data = F.fig_headline(vis, family="corruption", eps=0.05)
         made.append(save(fig, FIGURES / "fig9_vision.png", data))
+
+    fa = _load("faithfulness.parquet")
+    if fa is not None:
+        fig, data = F.fig_faithfulness(fa)
+        made.append(save(fig, FIGURES / "fig11_faithfulness.png", data))
+    adapt = _load("adaptation.parquet")
+    if adapt is not None:
+        fig, data = F.fig_adaptation(adapt)
+        made.append(save(fig, FIGURES / "fig13_adaptation.png", data))
+    share = _load("share_model_rows.parquet")
+    if share is not None:
+        fig, data = F.fig_share_model(share)
+        made.append(save(fig, FIGURES / "fig14_share_model.png", data))
 
     for p in made:
         print("wrote", p)
