@@ -31,10 +31,14 @@ settings with a matched null, 64% of them produce attribution movement *smaller*
 same model on a resample of the same data, and only 33% clear that floor — although their own
 flagship examples survive it comfortably.
 
-Two further results follow. First, the magnitude of attribution change carries **little information
+Two further results follow. First, the magnitude of attribution change **can be nearly uninformative
 about legitimacy**: across thousands of probe points, how much a point's explanation moved explains
 about 1% of the variance in how much it *should* have moved, and two published metrics consequently
-rank correct adaptation as 45% and 89% *worse* than unwarranted drift. Second, the monitored quantity that does correlate with unwarranted change
+rank correct adaptation as 45% and 89% *worse* than unwarranted drift. Repeating this on real census
+covariates with a known mechanism reverses it — magnitude there explains 65% of the variance — and we
+could not attribute the gap to update strength, sample size, or feature geometry. Magnitude is
+therefore unreliable rather than uniformly uninformative, which is enough to sink its use as
+evidence, and we report the disagreement rather than the favourable half. Second, the monitored quantity that does correlate with unwarranted change
 points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
 accuracy's association reverses sign across shift magnitudes.
 
@@ -453,6 +457,14 @@ So the honest summary is the per-point one: **within a shift family, magnitude e
 the variance in whether change was warranted.** The per-explainer contrast is underpowered at ten
 seeds and should not be read as equivalence.
 
+**This result does not generalise, and §7.15 shows where it stops.** Repeating the same per-point
+measurement on real ACS covariates with a known mechanism gives r = +0.81 and 65% of the variance —
+the opposite conclusion. We could not attribute the gap to update strength, sample size, feature
+redundancy, or uninformative features. H2 therefore establishes that magnitude *can* be nearly
+uninformative about legitimacy, not that it generally is; the practical consequence is the same
+either way, since an auditor cannot tell which regime they are in without the reference this paper
+supplies.
+
 The raw magnitudes are consistent with this (IG: 0.0398 vs 0.0386, p = 0.63; KernelSHAP: 0.0388 vs
 0.0415, p = 0.23), and for saliency and Grad×Input they differ in the *wrong direction* — moving
 **more** when nothing should change than when everything should.
@@ -753,6 +765,67 @@ replacement, not an additive update: it drove accuracy from 0.59 to 0.44 and pre
 0.54, destroying the prediction-preserved probe. Replaying the old data alongside the new — what
 deployment actually does — restores agreement to 0.72–0.82 with accuracy preserved.
 
+### 7.15 Off the generator: ω validated, H2 not (T18, T19)
+
+Every exact-ω result so far comes from a generator that supplies the covariates as well as the
+mechanism, which leaves an obvious objection: the closed form might behave only because the inputs
+are well-conditioned Gaussians. We remove half of that assumption. Covariates are **real ACS rows**
+— real marginals, real skew, real discreteness, real correlations — and only the labels are
+regenerated, from a quadratic logit whose β is fitted to the real income outcome. That mechanism is
+then Bayes-optimal by construction, so ω stays exact while the input distribution is no longer ours
+to choose.
+
+This cannot validate ω against real *labels*. Nothing can: ω is defined against the Bayes-optimal
+predictor, and no observational dataset exposes one. The scope is exactly "real covariates, known
+mechanism", and we state it rather than let the phrase "real data" do work it has not earned.
+
+**The machinery survives.** On real rows the closed form agrees with 512-step quadrature to
+1.1 × 10⁻¹⁴ and completeness holds to 1.8 × 10⁻¹⁵. Under a covariate tilt — real rows reweighted by
+exp(2·AGEP), leaving the mechanism untouched — ω is exactly 0, not approximately. Neither property
+depends on Gaussian inputs.
+
+The tilt is **calibrated to the synthetic shift, not chosen**: a cross-fitted domain classifier
+separates tilted from untilted samples at AUC 0.906, against 0.902 for the synthetic covariate shift.
+At our first attempt (strength 1.0) the tilt reached only AUC 0.759 and every effect below vanished —
+a reminder that a null result at an uncalibrated shift magnitude measures the manipulation, not the
+phenomenon. Both arms draw with replacement so the treatment is not handicapped by seeing fewer
+distinct rows.
+
+**H1 replicates, weakened.** With ω exactly 0, IG still moves 1.198× its matched null
+[1.053, 1.342]. Saliency (1.134 [0.997, 1.272]) and Grad×Input (1.128 [0.986, 1.270]) sit just above
+1 with intervals that graze it. The effect is real off-generator but roughly half the synthetic
+magnitude (IG 1.52), and only one of three explainers clears 1 unambiguously.
+
+**H2 does not replicate, and this is the paper's sharpest negative result.** Under concept shift on
+real covariates, per-point measured change tracks warranted change at **r = +0.807 [+0.748, +0.866],
+65% of the variance** — against r = +0.12 and 1.5% on synthetic data. Where §7.5 found that magnitude
+carries almost no information about legitimacy, the same measurement on real covariates finds that it
+carries a great deal.
+
+We tried to explain this away and failed, which is why we report it as a boundary rather than a
+footnote. Four candidate causes were tested and eliminated:
+
+| candidate | test | result |
+|---|---|---|
+| update strength | 2 / 20 / 100 update epochs | r = 0.83 / 0.81 / 0.65 — moves 0.18 over 50× |
+| sample size | already matched (8k source, 4k update) | identical to synthetic by construction |
+| feature redundancy | 4 collinear copies, max corr 0.48 → 0.94 | r 0.80 → 0.68; ratio does **not** rise |
+| uninformative features | 8 pure-noise features, β = 0 exactly | r 0.80 → 0.73 |
+
+Rebuilding the generator's entire structure on real covariates — 4 tight copies *plus* 8 noise
+features, reproducing its 0.94 redundancy — moves r only to 0.665 and leaves the ratio at
+1.079 [0.998, 1.159]. The gap is not feature geometry, not optimisation strength, and not sample
+size.
+
+The honest reading is that **H2's scope is the synthetic generator, and we do not know what property
+of it produces the decoupling.** The direction of the residual trends is at least consistent with
+redundancy contributing something (r falls monotonically as copies tighten), but the effect is far
+too small to close a 0.12-to-0.81 gap. H2 should be read as: there exist realistic settings in which
+attribution magnitude is nearly uninformative about legitimacy, and others in which it is highly
+informative — so magnitude cannot be *relied on* as evidence of legitimacy without knowing which
+regime you are in. That is a weaker claim than §7.5 states in isolation, and it is the one the full
+evidence supports.
+
 ## 8. Ablations
 
 The conclusion does not depend on any of the arbitrary choices (T5). Kendall τ between the
@@ -859,25 +932,34 @@ effect; we are reading the one the argument requires.
 1. **ω is exact only where the generative process is known.** On real data we claim only the
    covariate null and check it with a calibration-transfer screen that is necessary, not sufficient.
    A reviewer is right that real-data legitimacy is not verifiable; that is why the real-data section
-   reports Δ and floors and declines to label.
-2. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
+   reports Δ and floors and declines to label. §7.15 pushes this as far as it goes — real covariates
+   with a mechanism known by construction — but no design can validate ω against real *labels*,
+   because the real Bayes predictor is unobservable. This is a property of the quantity, not a gap in
+   the experiments.
+2. **H2 does not survive the move to real covariates, and we cannot say why.** Per-point measured
+   change explains 1.5% of the variance in warranted change on the generator and 65% on real ACS
+   covariates (§7.15). Update strength, sample size, feature redundancy and uninformative features
+   were each manipulated and none accounts for the gap. Until the responsible property is identified,
+   H2 supports "magnitude is unreliable as evidence of legitimacy" and not "magnitude is
+   uninformative".
+3. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
-3. **Scale is a bound, not a gap.** The effect is stable across a 630× parameter range within MLPs
+4. **Scale is a bound, not a gap.** The effect is stable across a 630× parameter range within MLPs
    (1.7k → 1.07M, §8.1) and holds for trees and a small CNN, but it is **absent on DistilBERT**
    (1.02 [0.97, 1.09] pooled, across a tenfold range of update strength, §7.13). The empirical claim
    therefore covers models trained from scratch up to ~1M parameters; we find no reliable effect in
    a 66.9M-parameter pretrained transformer. Whether that is scale or pretraining is unresolved and
    needs a same-size transformer trained from scratch.
-4. **Three seeds on the GPU arms.** The DistilBERT and ResNet results rest on three seeds each,
+5. **Three seeds on the GPU arms.** The DistilBERT and ResNet results rest on three seeds each,
    which is enough to see a null of this size but not enough to characterise its variance; per-seed
    IG ratios at the lightest update span 0.95 to 1.22.
-5. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
-6. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
+6. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
+7. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
    ratios are uninformative rather than null, and larger sample budgets would change them.
-7. **The update operator is a plain Adam fine-tune.** We ablate learning rate and epochs but not
+8. **The update operator is a plain Adam fine-tune.** We ablate learning rate and epochs but not
    optimiser family, regularisation, or replay.
-8. **`ω` compares the Bayes predictor's IG to a model's IG.** Both are IG with a common baseline, so
+9. **`ω` compares the Bayes predictor's IG to a model's IG.** Both are IG with a common baseline, so
    the comparison is like-for-like, but a model that is not close to Bayes-optimal will show change
    relative to a reference it was never going to match.
 
