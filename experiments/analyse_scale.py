@@ -31,7 +31,8 @@ OUT = ROOT / "paper" / "tables"
 KNOWN_PARAMS = {
     "mlp32": 1_696, "mlp64": 5_440, "mlp128": 19_072,
     "mlp256": 70_912, "mlp512": 272_896, "mlp1024": 1_070_080,
-    "resnet18_small": 78_042, "resnet18": 11_181_642, "distilbert": 66_955_010,
+    "resnet18_small": 78_042, "resnet18": 11_181_642,
+    "distilbert": 66_955_010, "distilbert(heavy)": 66_955_010,
 }
 
 
@@ -93,6 +94,24 @@ def main():
             rows += summarise_arm(df, model)
         else:
             print(f"  {fname} not present -- skipping {model}")
+
+    # the heavy-update DistilBERT point, measured on Kaggle and recorded verbatim. It is kept
+    # separate because it is confounded with update strength (docs/preregistration_scale.md).
+    heavy = RESULTS / "scale_text_heavy.csv"
+    if heavy.exists() and _load("scale_text.parquet") is None:
+        h = pd.read_csv(heavy)
+        for name, s in h.groupby("explainer"):
+            r, lo, hi = ratio_ci(s.delta.values, s.rho_null.values, n_boot=20000)
+            rows.append({
+                "model": "distilbert(heavy)", "n_params": 66_955_010, "explainer": name,
+                "eps": 0.05, "seeds": int(s.seed.nunique()),
+                "delta": float(s.delta.mean()), "rho_null": float(s.rho_null.mean()),
+                "ratio": r, "ratio_lo": lo, "ratio_hi": hi,
+                "p": paired_test(s.delta.values, s.rho_null.values),
+                "cliffs_delta": cliffs_delta(s.delta.values, s.rho_null.values),
+                "preserved_frac": float(s.preserved_frac.mean()),
+                "agree_treat": float(s.agree_treat.mean()),
+            })
 
     tab = pd.DataFrame(rows).sort_values(["n_params", "explainer"])
     OUT.mkdir(parents=True, exist_ok=True)
