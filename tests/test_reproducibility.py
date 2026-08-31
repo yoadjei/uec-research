@@ -22,6 +22,13 @@ TABLES = REPO / "paper" / "tables"
 FIGURES = REPO / "figures"
 
 
+def _run(cmd, timeout):
+    """pytest replaces stdin, and on Windows subprocess cannot duplicate that handle
+    (WinError 6). Handing it an explicit DEVNULL avoids it."""
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                          stdin=subprocess.DEVNULL, cwd=str(REPO))
+
+
 def test_committed_deliverables_are_present():
     """A fresh clone must already contain the paper's artefacts."""
     assert len(list(FIGURES.glob("*.png"))) >= 13, "figures are part of the deliverable"
@@ -46,8 +53,7 @@ def test_every_declared_dependency_is_importable():
 
 
 def test_reproduce_entry_point_lists_its_plan():
-    r = subprocess.run([sys.executable, str(REPO / "experiments" / "reproduce.py"), "--list"],
-                       capture_output=True, text=True, timeout=300)
+    r = _run([sys.executable, str(REPO / "experiments" / "reproduce.py"), "--list"], 300)
     assert r.returncode == 0, r.stderr
     for stage in ("synthetic", "trees", "re-audit", "vision", "ACS states"):
         assert stage in r.stdout, f"stage '{stage}' missing from the plan"
@@ -56,8 +62,7 @@ def test_reproduce_entry_point_lists_its_plan():
 @pytest.mark.skipif(not (RESULTS / "synthetic_metrics.parquet").exists(),
                     reason="results absent; nothing to verify against")
 def test_paper_numbers_match_the_data():
-    r = subprocess.run([sys.executable, str(REPO / "experiments" / "verify_paper.py")],
-                       capture_output=True, text=True, timeout=900)
+    r = _run([sys.executable, str(REPO / "experiments" / "verify_paper.py")], 900)
     tail = r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr
     assert r.returncode == 0, f"paper numbers drifted from the data:\n{r.stdout}\n{r.stderr}"
     assert "0 mismatched" in tail, tail
