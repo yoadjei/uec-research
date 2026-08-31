@@ -6,7 +6,16 @@ import numpy as np
 import pandas as pd
 
 from ..stats.inference import bootstrap_ci, ratio_ci
-from .style import FAMILY_LABEL, PALETTE, label
+from .style import (
+    BAR_EDGE,
+    FAMILY_LABEL,
+    HATCH,
+    MARKER,
+    PALETTE,
+    QUANTITY_LABEL,
+    explainer_ticks,
+    label,
+)
 
 
 def _primary(df, family="covariate", eps=0.05, distance="l1", phi="abs", features="all"):
@@ -34,37 +43,48 @@ def fig_headline(df, family="covariate", eps=0.05, order=None):
     data = pd.DataFrame(rows)
 
     plotted = [n for n in names if n in set(data.explainer)]
-    fig, ax = plt.subplots(figsize=(1.15 * len(plotted) + 2.2, 3.0))
+    fig, ax = plt.subplots(figsize=(1.25 * len(plotted) + 2.4, 3.2))
     width = 0.2
-    for i, key in enumerate(("nu", "rho_null", "rho_seed", "delta")):
+    # Order matters: the headline quantity is Delta/rho_null, so those two bars sit adjacent. With
+    # rho_seed between them the ratio bracket had to span a third bar and read as a property of the
+    # whole group rather than of the pair it actually describes.
+    for i, key in enumerate(("nu", "rho_seed", "rho_null", "delta")):
         sub = data[data.quantity == key].set_index("explainer").reindex(plotted)
         x = np.arange(len(plotted)) + (i - 1.5) * width
-        ax.bar(x, sub["mean"], width, color=PALETTE[key], label={
-            "nu": r"explainer noise $\nu$",
-            "rho_null": r"matched null $\rho_{\mathrm{null}}$",
-            "rho_seed": r"seed floor $\rho_{\mathrm{seed}}$",
-            "delta": r"shift-induced $\Delta$",
-        }[key])
+        ax.bar(x, sub["mean"], width, color=PALETTE[key], hatch=HATCH[key],
+               edgecolor=BAR_EDGE, linewidth=0.4, label=QUANTITY_LABEL[key])
         ax.errorbar(x, sub["mean"], yerr=[sub["mean"] - sub["lo"], sub["hi"] - sub["mean"]],
-                    fmt="none", ecolor="0.25", elinewidth=0.7, capsize=1.8)
+                    fmt="none", ecolor="0.2", elinewidth=0.7, capsize=1.8)
+        # A deterministic explainer has nu = 0 exactly. Drawing nothing makes that look like a
+        # missing measurement, so it is stated.
+        if key == "nu":
+            for xi, v in zip(x, sub["mean"].values):
+                if v < 1e-9:
+                    ax.text(xi, ax.get_ylim()[1] * 0.012, "0", ha="center", va="bottom",
+                            fontsize=6, color="0.35")
 
-    # the ratio is on a different scale from the bars; it annotates, it must not set the y-limit
+    # The ratio is Delta/rho_null, so it is drawn over those two bars rather than over the group,
+    # where it read as a property of the tallest bar (the seed floor) instead.
     bars = data[data.quantity != "ratio"]
-    ymax = bars["hi"].max() * 1.18
+    ymax = bars["hi"].max() * 1.24
     for i, name in enumerate(plotted):
         r = data[(data.explainer == name) & (data.quantity == "ratio")]["mean"].values
-        if r.size:
-            top = bars[bars.explainer == name]["hi"].max()
-            ax.text(i, min(top * 1.06, ymax * 0.97), f"{r[0]:.2f}$\\times$", ha="center",
-                    fontsize=7.2, color=PALETTE["delta"])
+        if not r.size:
+            continue
+        pair = data[(data.explainer == name) & data.quantity.isin(["rho_null", "delta"])]
+        top = pair["hi"].max()
+        xc = i + width                # midpoint of the adjacent rho_null and delta bars
+        ax.annotate("", xy=(i + 0.5 * width, top * 1.05), xytext=(i + 1.5 * width, top * 1.05),
+                    arrowprops=dict(arrowstyle="-", color=PALETTE["delta"], lw=0.8))
+        ax.text(xc, top * 1.08, f"{r[0]:.2f}$\\times$", ha="center", va="bottom",
+                fontsize=7.2, color=PALETTE["delta"], fontweight="bold")
     ax.set_ylim(0, ymax)
 
-    ax.set_xticks(np.arange(len(plotted)))
-    ax.set_xticklabels([label(n) for n in plotted], rotation=18, ha="right")
+    explainer_ticks(ax, plotted)
     ax.set_ylabel(r"attribution change (normalised $\ell_1$)")
     ax.set_title(f"Explanation change against its floors — {FAMILY_LABEL.get(family, family)} shift"
                  f" ($\\epsilon={eps}$)")
-    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22))
+    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.26))
     return fig, data
 
 
@@ -120,16 +140,28 @@ def fig_warranted_alignment(perpoint, families=("concept", "shortcut")):
             ax.set_visible(False)
             continue
         x, y = np.concatenate(xs), np.concatenate(ys)
-        ax.scatter(x, y, s=4, alpha=0.25, color=PALETTE["omega"], edgecolors="none")
+        ax.scatter(x, y, s=4, alpha=0.18, color=PALETTE["omega"], edgecolors="none",
+                   rasterized=True)
         lim = [0, max(x.max(), y.max()) * 1.05]
-        ax.plot(lim, lim, ls="--", color="0.4", lw=0.8, label=r"$\Delta=\omega$")
+        ax.plot(lim, lim, ls="--", color="0.35", lw=0.9,
+                label=r"$\Delta=\omega$ (perfect tracking)")
+        # Both panels share a y-scale. With independent scales the right panel's flat band looked
+        # flatter than the left's purely because omega ranges twice as far.
+        ax.set_ylim(0, 0.16)
         r_seed = np.array(per_seed)
         m = r_seed.mean()
         se = r_seed.std(ddof=1) / np.sqrt(len(r_seed))
         ax.set_title(f"{FAMILY_LABEL.get(fam, fam)}  "
                      f"($r={m:+.2f}$ [{m - 1.96 * se:+.2f}, {m + 1.96 * se:+.2f}])")
         ax.set_xlabel(r"warranted change $\omega$")
-        ax.legend(loc="upper left")
+        if ax is axes[0]:
+            ax.legend(loc="upper left")
+        # State the reference's range, not a max/min ratio: the minimum is essentially zero, so a
+        # ratio reports the smallest observed omega rather than anything about the spread.
+        ax.text(x.max() * 0.60, 0.118,
+                "measured change stays flat while\n"
+                rf"the reference spans ${np.percentile(x, 1):.2f}$–${np.percentile(x, 99):.2f}$",
+                fontsize=6.3, color="0.35", ha="center", va="center")
         rows.append({"family": fam, "pearson_r": m, "ci_lo": m - 1.96 * se,
                      "ci_hi": m + 1.96 * se, "pooled_r": np.corrcoef(x, y)[0, 1],
                      "seeds": len(r_seed), "n": len(x)})
@@ -336,30 +368,62 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
     once it overshoots. The semi-synthetic run is marked because it is the point that motivated the
     sweep -- it lands on the curve rather than beside it.
     """
-    fig, ax = plt.subplots(figsize=(4.0, 3.0))
-    for fam, marker in (("shortcut", "o"), ("concept", "s")):
+    fig, ax = plt.subplots(figsize=(5.2, 3.4))
+    ax.set_ylim(-0.32, 1.16)
+
+    # Shade the two regimes. This is the claim of the panel, so it should be visible before any
+    # marker is read.
+    ax.axvspan(0, 1.0, color=PALETTE["rho_seed"], alpha=0.10, zorder=0)
+    ax.axvline(1.0, color="0.35", ls="--", lw=0.9, zorder=1)
+    ax.text(0.99, 1.11, "under-adapted", ha="right", va="top", fontsize=6.5, color="0.35")
+    ax.text(1.03, 1.11, "overshoot", ha="left", va="top", fontsize=6.5, color="0.35")
+
+    # Points bunch near completeness 1, so a single offset per family collides. Offsets are given
+    # per point, placed away from the neighbouring marker rather than uniformly.
+    label_offsets = {
+        "shortcut": {2: (6, 13), 20: (-8, 13), 100: (18, 7), 400: (21, 2)},
+        "concept": {2: (-6, -15), 20: (8, -16), 100: (-19, 5), 400: (-10, -15)},
+    }
+    for fam in ("shortcut", "concept"):
         q = adapt[adapt.family == fam]
         if q.empty:
             continue
+        # Sort by completeness, not by epochs: the x-axis is completeness, and joining points in
+        # epoch order drew a zigzag that implied a non-monotone path the data does not show.
         g = q.groupby("update_epochs").agg(
             completeness=("completeness", "mean"), r=("r", "mean"),
-            sd=("r", "std"), n=("r", "size")).reset_index()
+            sd=("r", "std"), n=("r", "size")).reset_index().sort_values("completeness")
         err = 1.96 * g.sd / np.sqrt(g.n)
         colour = PALETTE["delta"] if fam == "shortcut" else PALETTE["rho_null"]
-        ax.errorbar(g.completeness, g.r, yerr=err, marker=marker, ms=4, lw=1.0,
-                    capsize=2, color=colour, label=FAMILY_LABEL.get(fam, fam))
+        ax.errorbar(g.completeness, g.r, yerr=err, marker=MARKER["delta" if fam == "shortcut"
+                                                                 else "rho_null"],
+                    ms=5, lw=1.4, capsize=2.5, color=colour, zorder=3,
+                    label=FAMILY_LABEL.get(fam, fam))
         for _, x in g.iterrows():
+            dx, dy = label_offsets[fam].get(int(x.update_epochs), (0, 11))
             ax.annotate(f"{int(x.update_epochs)}ep", (x.completeness, x.r),
-                        textcoords="offset points", xytext=(4, -9), fontsize=6, color=colour)
+                        textcoords="offset points", xytext=(dx, dy), ha="center",
+                        fontsize=6.2, color=colour)
 
-    ax.axvline(1.0, color="0.4", ls="--", lw=0.8)
-    ax.text(1.02, ax.get_ylim()[0] + 0.04, "adaptation complete", fontsize=6, color="0.35")
-    ax.scatter(*semisynth_point, marker="*", s=90, color=PALETTE["omega"], zorder=5,
-               label="semi-synthetic (real covariates)")
-    ax.set_xlabel(r"adaptation completeness  $\mathbb{E}[\Delta]/\mathbb{E}[\omega]$")
+    # The semi-synthetic run motivated the sweep, so it is marked -- offset from the curve and
+    # leadered, because at completeness 1.09 it sits directly on top of the 100ep marker.
+    sx, sy = semisynth_point
+    # Dark edge, not white: in greyscale the green star and the orange line sit at nearly the same
+    # luminance, so the outline plus the star glyph carry the distinction.
+    ax.scatter(sx, sy, marker="*", s=170, facecolor=PALETTE["omega"], edgecolor="0.15",
+               linewidth=0.7, zorder=6, label="semi-synthetic (real covariates)")
+    ax.annotate("real covariates\nland on the curve", xy=(sx, sy), xytext=(1.72, 0.74),
+                fontsize=6.5, color=PALETTE["omega"], ha="left", va="center",
+                arrowprops=dict(arrowstyle="-", color=PALETTE["omega"], lw=0.7,
+                                connectionstyle="arc3,rad=-0.2"))
+
+    ax.set_xlabel(r"adaptation completeness  $\mathbb{E}[\Delta]\,/\,\mathbb{E}[\omega]$")
     ax.set_ylabel(r"per-point $r(\Delta,\omega)$")
-    ax.axhline(0.0, color="0.8", lw=0.6, zorder=0)
-    ax.legend(fontsize=6, loc="lower left")
+    ax.axhline(0.0, color="0.75", lw=0.7, zorder=1)
+    ax.set_xlim(0.12, 3.32)
+    # Below the axes: every in-panel position collided with either the concept curve's 400ep
+    # marker or the leader line to the semi-synthetic star.
+    ax.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=3)
     rows = adapt.groupby(["family", "update_epochs"]).agg(
         completeness=("completeness", "mean"), r=("r", "mean"), seeds=("r", "size")).reset_index()
     return fig, rows
@@ -367,29 +431,55 @@ def fig_adaptation(adapt, semisynth_point=(1.09, 0.807)):
 
 def fig_share_model(rows):
     """Fig 14. What predicts the optimiser share, and where DistilBERT sits relative to it."""
-    fig, axes = plt.subplots(1, 2, figsize=(6.6, 2.8))
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0))
     scratch = rows[rows.pretrained == 0]
 
     w = scratch[scratch.source == "mlp_width"]
     g = w.groupby("n_params").share.agg(["mean", "std", "count"]).reset_index()
     axes[0].errorbar(g.n_params, g["mean"], yerr=1.96 * g["std"] / np.sqrt(g["count"]),
-                     marker="o", ms=4, lw=1.0, capsize=2, color=PALETTE["rho_null"])
+                     marker=MARKER["rho_null"], ms=4.5, lw=1.3, capsize=2.5,
+                     color=PALETTE["rho_null"])
     axes[0].set_xscale("log")
     axes[0].set_xlabel("parameters")
-    axes[0].set_ylabel(r"optimiser share  $\rho_{\rm null}/\Delta$")
-    axes[0].set_title("capacity: no effect ($p=0.94$)")
+    axes[0].set_ylabel(r"optimiser share  $\rho_{\mathrm{null}}/\Delta$")
+    axes[0].set_title("capacity: flat over $630\\times$  ($p=0.94$)")
     axes[0].set_ylim(0, 1.05)
+    axes[0].annotate("", xy=(g.n_params.iloc[0], 0.86), xytext=(g.n_params.iloc[-1], 0.86),
+                     arrowprops=dict(arrowstyle="<->", color="0.45", lw=0.7))
+    axes[0].text(np.sqrt(g.n_params.iloc[0] * g.n_params.iloc[-1]), 0.885,
+                 "no trend", ha="center", fontsize=6.5, color="0.4")
 
     fit = scratch[scratch.agree.notna()]
-    axes[1].scatter(fit.agree, fit.share, s=6, alpha=0.25, color=PALETTE["rho_null"],
-                    edgecolors="none", label="from scratch")
+    axes[1].scatter(fit.agree, fit.share, s=7, alpha=0.22, color=PALETTE["rho_null"],
+                    edgecolors="none", label="from scratch (612 runs)", zorder=2)
+
+    # The panel's claim is that DistilBERT sits *above* the from-scratch relationship, which cannot
+    # be read off a bare scatter. Draw the fit the text quotes, on the logit scale it was fitted on.
+    import statsmodels.api as sm
+    z = np.log(np.clip(fit.share, 0.02, 0.98) / (1 - np.clip(fit.share, 0.02, 0.98)))
+    m = sm.OLS(z, sm.add_constant(fit.agree.astype(float))).fit()
+    xs = np.linspace(fit.agree.min(), 1.0, 100)
+    pr = m.get_prediction(sm.add_constant(xs, has_constant="add")).summary_frame(alpha=0.05)
+    inv = lambda v: 1.0 / (1.0 + np.exp(-v))  # noqa: E731
+    axes[1].plot(xs, inv(pr["mean"]), color=PALETTE["rho_null"], lw=1.6, zorder=4,
+                 label="fitted from-scratch curve")
+    axes[1].fill_between(xs, inv(pr.mean_ci_lower), inv(pr.mean_ci_upper),
+                         color=PALETTE["rho_null"], alpha=0.28, lw=0, zorder=3)
+
     pre = rows[rows.pretrained == 1]
-    axes[1].scatter(pre.agree, pre.share, s=40, marker="*", color=PALETTE["delta"],
-                    zorder=5, label="DistilBERT")
+    axes[1].scatter(pre.agree, pre.share, s=90, marker="*", facecolor=PALETTE["delta"],
+                    edgecolor="white", linewidth=0.5, zorder=6, label="DistilBERT (66.9M)")
+    axes[1].annotate(f"+{0.173:.2f} above the curve\nat matched update size",
+                     xy=(pre.agree.mean(), pre.share.mean()), xytext=(0.76, 1.18),
+                     fontsize=6.5, color=PALETTE["delta"], ha="left", va="center",
+                     arrowprops=dict(arrowstyle="->", color=PALETTE["delta"], lw=0.8,
+                                     connectionstyle="arc3,rad=0.15"))
     axes[1].set_xlabel("prediction agreement (update size)")
+    axes[1].set_ylabel(r"optimiser share  $\rho_{\mathrm{null}}/\Delta$")
     axes[1].set_title("update strength: monotone")
-    axes[1].set_ylim(0, 1.35)
-    axes[1].legend(fontsize=6, loc="lower left")
+    axes[1].set_ylim(0, 1.38)
+    axes[1].legend(fontsize=6.3, loc="lower left")
+    fig.tight_layout(w_pad=2.0)
     return fig, rows.groupby(["source", "pretrained"]).share.agg(["mean", "size"]).reset_index()
 
 
@@ -408,15 +498,16 @@ def fig_faithfulness(fa, family="covariate"):
 
     fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
     x = np.arange(len(g))
-    axes[0].bar(x - 0.19, g.ratio_all, 0.38, color=PALETTE["delta"], label="all preserved points")
+    axes[0].bar(x - 0.19, g.ratio_all, 0.38, color=PALETTE["delta"], hatch=HATCH["delta"],
+                edgecolor=BAR_EDGE, linewidth=0.4, label="all preserved points")
     axes[0].bar(x + 0.19, g.ratio_faithful, 0.38, color=PALETTE["rho_null"],
+                hatch=HATCH["rho_null"], edgecolor=BAR_EDGE, linewidth=0.4,
                 label="faithful points only")
     axes[0].axhline(1.0, color="0.4", ls="--", lw=0.8)
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels([label(n) for n in g.explainer], rotation=18, ha="right")
+    explainer_ticks(axes[0], list(g.explainer))
     axes[0].set_ylabel(r"$\Delta/\rho_{\mathrm{null}}$")
-    axes[0].set_title("restricting to faithful points changes nothing — "
-                      f"{FAMILY_LABEL.get(family, family)}")
+    axes[0].set_title("restricting to faithful points changes nothing\n"
+                      f"({FAMILY_LABEL.get(family, family)} shift)")
     axes[0].legend(fontsize=6)
 
     # The right panel spans *all* families, not just `family`: the text quotes the per-seed range
@@ -426,11 +517,10 @@ def fig_faithfulness(fa, family="covariate"):
     for i, (name, s) in enumerate(fa.groupby("explainer")):
         axes[1].scatter(np.full(len(s), i), s.corr_delta_faith, s=10, alpha=0.5,
                         color=PALETTE["omega"], edgecolors="none")
-    axes[1].set_xticks(np.arange(fa.explainer.nunique()))
-    axes[1].set_xticklabels([label(n) for n in sorted(fa.explainer.unique())],
-                            rotation=18, ha="right")
+    explainer_ticks(axes[1], sorted(fa.explainer.unique()))
     axes[1].set_ylabel(r"corr($\Delta$, faithfulness drop)")
-    axes[1].set_title(f"per seed, all families ({len(fa)} rows)")
+    axes[1].set_title("no consistent association\n"
+                      f"per seed, all families ({len(fa)} rows)")
     axes[1].set_ylim(-0.6, 0.6)
     return fig, fa.reset_index(drop=True)
 
@@ -456,13 +546,13 @@ def fig_distributions(df, family="covariate", eps=0.05):
     for i, key in enumerate(("nu", "rho_null", "rho_seed", "delta")):
         sub = data[data.quantity == key].set_index("explainer").reindex(names)
         xs = np.arange(len(names)) + (i - 1.5) * width
-        ax.bar(xs, sub["median"], width, color=PALETTE[key], label=key)
+        ax.bar(xs, sub["median"], width, color=PALETTE[key], hatch=HATCH[key],
+               edgecolor=BAR_EDGE, linewidth=0.4, label=QUANTITY_LABEL[key])
         ax.errorbar(xs, sub["median"],
                     yerr=[sub["median"] - sub["q25"], sub["q75"] - sub["median"]],
                     fmt="none", ecolor="0.25", elinewidth=0.7, capsize=1.8)
-    ax.set_xticks(np.arange(len(names)))
-    ax.set_xticklabels([label(n) for n in names], rotation=18, ha="right")
+    explainer_ticks(ax, names)
     ax.set_ylabel(r"attribution change (median, IQR)")
     ax.set_title(f"Distributions, not means — {FAMILY_LABEL.get(family, family)}")
-    ax.legend(ncol=4, fontsize=6, loc="upper center", bbox_to_anchor=(0.5, -0.22))
+    ax.legend(ncol=4, fontsize=6.5, loc="upper center", bbox_to_anchor=(0.5, -0.26))
     return fig, data
