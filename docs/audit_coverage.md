@@ -88,7 +88,7 @@ All 16 objections mapped in `paper/reviews.md`. Three conceded rather than argue
 
 ## §11 Alternative positionings
 
-Positioning 1 chosen as recommended; Positioning 2 (method-class theory) folded in as §5 rather than held as a fallback. Title #1 used verbatim. **DONE.**
+Positioning 1 chosen as recommended; Positioning 2 (method-class theory) folded in as §5 rather than held as a fallback. Title #1 used until the final pass, then replaced (see §1). **DONE.**
 
 ## §12 Experimental blueprint
 
@@ -107,7 +107,7 @@ Positioning 1 chosen as recommended; Positioning 2 (method-class theory) folded 
 
 ## §13–§14 Minimum and ideal experiment sets
 
-Minimum set exceeded. Ideal set: Folktables **DONE** (4 states, 10 seeds), CIFAR-10 **DONE**, LIME and TreeSHAP **DONE**, ε-sweep **DONE** (4 values), 3 distances **DONE+** (6), Rashomon-position ablation **DONE**. Folktables *year* shift **GAP** (state shift only).
+Minimum set exceeded. Ideal set: Folktables **DONE** (4 states, 10 seeds), CIFAR-10 **DONE**, LIME and TreeSHAP **DONE**, ε-sweep **DONE** (4 values), 3 distances **DONE+** (6), Rashomon-position ablation **DONE**. Folktables *year* shift **DONE** (2018 → 2022).
 
 ## §15 Datasets
 
@@ -185,7 +185,7 @@ Attack surface **DONE** (`paper/reviews.md`). Five simulated reviews **DONE**, r
 
 ## §25–§27 Structure, figures, tables
 
-Paper structure follows §25 **DONE**. Figures 1–7 **DONE+** (11 produced, each writing its own source data). Tables T1–T6 **DONE+** (13 produced).
+Paper structure follows §25 **DONE**. Figures 1–7 **DONE+** (16 produced, each writing its own source data and each rebuildable by `make_figures.py` — three had lost their builders and were restored). Tables T1–T6 **DONE+** (25 produced).
 
 ## §28 Reproducibility
 
