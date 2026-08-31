@@ -95,6 +95,14 @@ def main():
         c("7.5 omega, shortcut", sc.omega.mean(), 0.326, tol=0.01, source="T2_uec")
         c("7.5 omega, covariate", cov.omega.mean(), 0.0, tol=1e-9, source="T2_uec")
 
+    if syn is not None:
+        # The placebo comparison 7.3 leans on: same no-shift data, two controls, two model classes.
+        n = _primary(syn, family="none")
+        c("7.3 MLP placebo, matched null", n.delta.mean() / n.rho_null.mean(), 1.02, tol=0.02,
+          source="T2_uec")
+        c("7.3 MLP placebo, SEED floor", n.delta.mean() / n.rho_seed.mean(), 0.32, tol=0.02,
+          source="T2_uec")
+
     tr = load("trees_metrics.parquet")
     if tr is not None:
         t = _primary(tr, family="none")
