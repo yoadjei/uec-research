@@ -353,9 +353,10 @@ misleads depends on the model class and the update operator.
 
 This is what the matched null buys. Over a grid of shift magnitude × update strength (600 runs,
 5 seeds), the ratio to the matched null **falls** as the update gets heavier, while the ratio to the
-seed floor **rises**:
+seed floor **rises**. One cell of that grid, quoted in full so it can be located exactly — IG, shift
+magnitude 1.5, update learning rate 2 × 10⁻⁴:
 
-| update | Δ/ρ_null (IG, shift 1.5) | Δ/ρ_seed |
+| update | Δ/ρ_null | Δ/ρ_seed |
 |---|---|---|
 | 1 epoch | **1.81** | 0.11 |
 | 2 epochs | 1.58 | 0.19 |
@@ -363,7 +364,11 @@ seed floor **rises**:
 | 20 epochs | 1.28 | 0.82 |
 | 60 epochs | 1.09 | **1.07** |
 
-The two controls order the update regimes in opposite directions, and the curves cross. Read against
+This is the most pronounced cell of the twelve, so we state what happens in the rest rather than
+resting on it: **the opposite ordering holds in 24 of 24** explainer × magnitude × learning-rate
+cells, and the two curves actually cross in 10 of 12. Fig. 2b plots the grid with learning rates
+pooled, which is why its curves are flatter than the single cell above. The direction — not the
+magnitude — is what the argument needs, and the direction is unanimous. Read against
 the seed floor — the control implicit in prior work — a heavy update looks like the most
 shift-driven condition; read against the matched null it is the least. The reason is mechanical: the
 seed floor is a fixed quantity while Δ grows with training, so the ratio to it measures *how hard
@@ -1013,7 +1018,7 @@ Five further axes, 5 seeds each. Every configuration gives a ratio above 1; what
 
 | axis | variants | ratio (IG) |
 |---|---|---|
-| architecture width | 32 → 1024 hidden units (see below) | 1.57 → 1.36 |
+| architecture width | 32 → 1024 hidden units (see below) | 1.48 → 1.36 |
 | IG baseline | zeros / source mean / **target mean** | 1.50 / 1.50 / **2.34** |
 | SHAP background | 10 / 25 / 50 samples | 1.46 / 1.46 / 1.47 |
 | LIME kernel width | 0.5 / default / 2.0 | 1.69 / 1.33 / 1.43 |
@@ -1026,12 +1031,12 @@ started:
 
 | width | parameters | Grad×Input | IG |
 |---|---|---|---|
-| 32 | 1.7k | 1.72 | 1.57 |
-| 128 | 19k | 1.58 | 1.45 |
+| 32 | 1.7k | 1.62 | 1.48 |
+| 128 | 19k | 1.57 | 1.45 |
 | 512 | 272k | 1.64 | 1.39 |
-| 1024 | 1.07M | 1.56 | 1.36 |
+| 1024 | 1.07M | 1.55 | 1.36 |
 
-Grad×Input is flat (1.53–1.72 with no trend); IG declines mildly and then plateaus (1.57 → 1.36).
+Grad×Input is flat (1.53–1.64 with no trend); IG declines mildly and then plateaus (1.48 → 1.36).
 Neither approaches 1. This does not settle the scale question — these are still MLPs on synthetic
 data — but it removes the specific worry that the phenomenon is an artefact of tiny models, and it
 shows the mild decline visible over 32→128 does not continue.
