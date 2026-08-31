@@ -24,7 +24,10 @@ Unwarranted change is largest for *light* updates, where predictions are best pr
 
 The sharpest demonstration is a no-shift placebo: on gradient-boosted trees with exact TreeSHAP,
 where nothing whatsoever has shifted, the matched null correctly reports a ratio of 0.98 while the
-seed floor reports 1.90 — manufacturing a near-two-fold effect out of nothing.
+seed floor reports 1.90 — manufacturing a near-two-fold effect out of nothing. We state the
+consequence for our own results rather than leaving it to be discovered: against that seed floor our
+headline effect is *inverted* (median 0.31), and the case for reading it against the matched null
+instead rests on the placebo, whose correct answer is fixed in advance.
 
 We then apply the missing control to a published audit. Re-running Delta-Audit's 45 reported
 settings with a matched null, 64% of them produce attribution movement *smaller* than refitting the
@@ -372,6 +375,34 @@ the new distribution**, and no study lacking a matched-operator control can sepa
 Note also that the effect is largest exactly where predictions are best preserved: at 1 epoch,
 agreement is 0.98 and the ratio is at its maximum. The two desiderata align rather than trade off,
 and light incremental fine-tuning is the realistic deployment regime.
+
+**Stated plainly: measured against the seed floor, our headline effect is not merely absent, it is
+inverted.** In the headline covariate-shift condition of §7.4, Δ/ρ_seed runs 0.21–0.78 with a median
+of **0.31** — attributions move roughly *three times less* than an independent retrain moves them. A
+reader who takes the seed-retraining floor as the reference will conclude there is no phenomenon
+here at all. We put the number in the main text because it is the first thing a sceptical reader
+will compute, and because our answer to it is the paper's central argument rather than a
+qualification of it.
+
+The obvious suspicion is that we adopted whichever control produced the answer we wanted. Three
+things speak against that, and the first is decisive because its ground truth is fixed in advance:
+
+1. **The placebo has a known answer, and only one control gets it right.** With gradient-boosted
+   trees, exact TreeSHAP, and *nothing shifted whatsoever*, the correct report is "no effect". The
+   matched null returns 0.98 (interval covering 1); the seed floor returns **1.90** (§7.2). A control
+   that manufactures a two-fold effect out of an unshifted placebo cannot be used to certify effects
+   under shift. This test does not depend on any shift result and was specified before them.
+2. **The comparison is not like-for-like.** ρ_seed retrains from scratch — 60 epochs on 8,000 points
+   — while the update is 20 epochs on 4,000. Δ/ρ_seed therefore compares a fine-tune against a
+   from-scratch retrain, which differ in operator, data volume and step count simultaneously. ρ_null
+   holds all three fixed and varies only the sampling distribution.
+3. **The two controls disagree about direction, not just magnitude** (table above). If ρ_seed were a
+   valid-but-conservative reference the orderings would agree and only the scale would differ. They
+   invert, which means at most one of them is measuring the shift.
+
+The honest summary is that this paper reports a *smaller* effect than the literature it critiques,
+against a stricter and better-matched control — and that the large effects obtained against the seed
+floor are, on the evidence of the placebo, substantially artefacts of that floor.
 
 ### 7.4 H1: unwarranted change exists (Fig. 2, T2, T3)
 
