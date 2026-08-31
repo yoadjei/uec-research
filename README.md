@@ -36,39 +36,36 @@ tests/         89 tests, including numeric verification of every proposition
 ## Install
 
 ```bash
-python -m pip install -e .
-python -m pip install torch captum shap lime xgboost folktables quantus torchvision \
-                      scikit-learn statsmodels pandas pyarrow matplotlib
+python -m pip install -e .          # every dependency is declared in pyproject.toml
+python -m pip install -e ".[dev]"   # + pytest
 ```
 
-CPU is sufficient; nothing here needs a GPU.
+CPU is sufficient. Only the transformer arm needs a GPU (`.[gpu]`), and its measured output is
+committed under `results/` because it cannot be regenerated locally.
 
 ## Reproduce
 
 ```bash
-pytest tests/ -q                       # includes the proposition checks
+pytest tests/ -q                          # 97 tests, including the proposition checks
 
-python experiments/run_synthetic.py    # E0-E7: floors, treatments, theory
-python experiments/sweep_regime.py     # shift magnitude x update strength
-python experiments/run_differentiation.py   # what ROS / FASS / Delta-Audit report instead
-python experiments/run_trees.py        # xgboost + exact TreeSHAP, retrain-only
-python experiments/run_folktables.py   # ACS state shifts
-python experiments/run_vision.py       # CIFAR-10 sanity check
-
-python experiments/make_tables.py
-python experiments/make_figures.py
+python experiments/reproduce.py --list    # the plan, with per-stage timings
+python experiments/reproduce.py --quick   # headline result only, ~15 min
+python experiments/reproduce.py           # everything, ~4.5 h on 8 CPU cores
 ```
 
-The headline figure alone:
+`reproduce.py` runs all twelve stages in dependency order, skips any whose output already exists
+(so an interrupted run resumes), then rebuilds every table and figure. Individual stages still run
+directly — `run_synthetic.py`, `sweep_regime.py`, `run_trees.py`, `run_differentiation.py`,
+`run_faithfulness.py`, `run_ablations.py`, `run_budget_sweep.py`, `run_reaudit.py`,
+`run_folktables.py`, `run_vision.py`.
 
-```bash
-python experiments/run_synthetic.py --seeds 5 --families none covariate --tag synthetic
-python experiments/make_figures.py
-# -> figures/fig2_headline.png (+ fig2_headline.csv, the numbers behind it)
-```
+Figures and tables are committed, so a fresh clone already has them. `make_tables.py` and
+`make_figures.py` **refuse to run** when `results/` is empty rather than silently overwriting the
+committed versions with nothing.
 
 Every figure writes its source data beside the image. `results/registry.csv` maps each run to its
-regime, seed and checkpoint weight hash.
+regime, seed and checkpoint weight hash, and `checkpoints/` holds the headline models with a
+manifest so those hashes can be verified.
 
 ## What it found
 
