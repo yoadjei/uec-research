@@ -144,9 +144,16 @@ def main():
 
     w = load("scale_width.parquet")
     if w is not None:
+        # Pooled (mean delta / mean rho_null), the convention stated in 7.5 and used by Fig 12.
+        # Averaging per-seed ratios instead gives 1.573 at width 32 and silently disagrees with
+        # the figure, which is how this drifted before.
         g = w[w.explainer == "integrated_gradients"].groupby("width")
-        c("8.1 width 32 ratio", g.get_group(32).ratio.mean(), 1.573, tol=0.02, source="T14")
-        c("8.1 width 1024 ratio", g.get_group(1024).ratio.mean(), 1.360, tol=0.02, source="T14")
+        pooled = g.apply(lambda x: x.delta.mean() / x.rho_null.mean(), include_groups=False)
+        c("8.1 width 32 ratio", pooled.get(32), 1.482, tol=0.02, source="T14")
+        c("8.1 width 1024 ratio", pooled.get(1024), 1.360, tol=0.02, source="T14")
+        pg = w[w.explainer == "gradient_x_input"].groupby("width").apply(
+            lambda x: x.delta.mean() / x.rho_null.mean(), include_groups=False)
+        c("8.1 width 32 ratio, GxI", pg.get(32), 1.62, tol=0.02, source="T14")
         c("8.1 width 1024 params", w[w.width == 1024].n_params.iloc[0], 1_070_080, tol=0,
           source="T14")
 
@@ -231,6 +238,72 @@ def main():
         core = ab[ab.value.isin(["spearman", "cosine", "l1", "abs", "all", "reliable"])]
         c("8 ablation Kendall tau (min over core axes)",
           core.kendall_tau_vs_primary.min(), 1.0, tol=1e-9, source="T5_ablations")
+
+    # ---- figures ----------------------------------------------------------------------------
+    # Each figure writes its source data beside the image. A number can therefore be right in the
+    # text and wrong in the panel, which is how fig3 came to report a pooled r of 0.097 against the
+    # per-seed 0.121 in the text. These checks tie the two together.
+    FIG = ROOT / "figures"
+
+    f3 = load("fig3_warranted.csv", FIG)
+    if f3 is not None:
+        for fam, expected in [("concept", 0.121), ("shortcut", -0.104)]:
+            c(f"Fig3 r matches T17b, {fam}", f3[f3.family == fam].pearson_r.iloc[0], expected,
+              tol=0.005, source="fig3_warranted")
+
+    f2 = load("fig2_headline.csv", FIG)
+    if f2 is not None:
+        r = f2[f2.quantity == "ratio"].set_index("explainer")["mean"]
+        for name, expected in [("integrated_gradients", 1.52), ("saliency", 1.73),
+                               ("lime", 1.25), ("expected_gradients", 1.02)]:
+            c(f"Fig2 ratio matches 7.4, {name}", r.get(name), expected, tol=0.02,
+              source="fig2_headline")
+
+    f11 = load("fig11_faithfulness.csv", FIG)
+    if f11 is not None:
+        ig = f11[(f11.family == "covariate") & (f11.explainer == "integrated_gradients")]
+        c("Fig11 ratio_all matches 7.9", ig.ratio_all.mean(), 1.563, tol=0.01, source="fig11")
+        c("Fig11 ratio_faithful matches 7.9", ig.ratio_faithful.mean(), 1.567, tol=0.01,
+          source="fig11")
+        c("Fig11 per-seed |corr| max matches 7.9", f11.corr_delta_faith.abs().max(), 0.389,
+          tol=0.005, source="fig11")
+
+    f2c = load("fig2c_shortcut.csv", FIG)
+    if f2c is not None and syn is not None:
+        sh = _primary(syn, family="shortcut", explainer="integrated_gradients")
+        c("Fig2c IG ratio matches the shortcut data",
+          f2c[(f2c.explainer == "integrated_gradients") & (f2c.quantity == "ratio")]["mean"].iloc[0],
+          sh.delta.mean() / sh.rho_null.mean(), tol=0.02, source="fig2c")
+
+    f13 = load("fig13_adaptation.csv", FIG)
+    if f13 is not None:
+        s = f13[f13.family == "shortcut"].set_index("update_epochs")
+        c("Fig13 r matches T20 at 20 epochs", s.r.get(20), 0.882, tol=0.01, source="fig13")
+        c("Fig13 completeness at 20 epochs", s.completeness.get(20), 0.993, tol=0.01,
+          source="fig13")
+
+    grid = load("sweep_regime.parquet")
+    if grid is not None:
+        # The 7.3 table is one named cell of the grid; verify it as quoted, then verify the
+        # robustness claim that replaces reliance on it.
+        cell = grid[(grid.explainer == "integrated_gradients") & (grid.magnitude == 1.5)
+                    & (grid.update_lr == 2e-4)].groupby("update_epochs")
+        for ep, expected in [(1, 1.81), (60, 1.09)]:
+            c(f"7.3 cell Delta/rho_null at {ep} epoch(s)", cell.ratio.mean().get(ep), expected,
+              tol=0.02, source="sweep_regime")
+        for ep, expected in [(1, 0.11), (60, 1.07)]:
+            c(f"7.3 cell Delta/rho_seed at {ep} epoch(s)", cell.ratio_seed.mean().get(ep),
+              expected, tol=0.02, source="sweep_regime")
+        ok = tot = 0
+        for _, s in grid.groupby(["magnitude", "update_lr", "explainer"]):
+            g = s.groupby("update_epochs").agg(r=("ratio", "mean"),
+                                               rs=("ratio_seed", "mean")).sort_index()
+            if len(g) < 2:
+                continue
+            tot += 1
+            ok += (g.r.iloc[-1] < g.r.iloc[0]) and (g.rs.iloc[-1] > g.rs.iloc[0])
+        c("7.3 cells with the opposite ordering", ok, 24, tol=0, source="sweep_regime")
+        c("7.3 cells examined", tot, 24, tol=0, source="sweep_regime")
 
     bad = c.report()
     sys.exit(1 if bad else 0)
