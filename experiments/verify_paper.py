@@ -77,6 +77,12 @@ def main():
             c(f"7.4 H1 ratio, {name}", s.delta.mean() / s.rho_null.mean(), expected,
               source="T2_uec")
 
+        # The number a sceptical reader computes first (7.3): our headline effect against the
+        # seed floor prior work uses implicitly.
+        c("7.3 headline Delta/rho_seed, median over explainers",
+          (q.groupby("explainer").delta.mean() / q.groupby("explainer").rho_seed.mean()).median(),
+          0.31, tol=0.02, source="T2_uec")
+
         p = _primary(syn, family="none")
         c("7.1 placebo max ratio", (p.groupby("explainer").delta.mean()
                                     / p.groupby("explainer").rho_null.mean()).max(), 1.10,
