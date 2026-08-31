@@ -92,7 +92,7 @@ Every item is now discharged. Scale (§31 Version C) was the last, and it came b
 | # | Item | Status / result |
 |---|---|---|
 | 6.1 | H1 | ✓ **Supported** — 7/7, Holm p = 0.014 |
-| 6.2 | H2 | ✓+ **Refined into a stronger result** (§7.4) |
+| 6.2 | H2 | ~ **Conditional.** Audit gate was ρ>0.5, escalate if <0.3; synthetic light updates give +0.12 / −0.10 (should have escalated). §7.16 identifies the governing quantity: alignment reaches +0.88 once adaptation completes, +0.81 semi-synthetically |
 | 6.3 | H3 | ✓ **Partly refuted**, worse than hypothesised |
 | 6.4 | H4 | ✓ **Supported** — 0/20,000 vs 60.8% |
 | 6.5 | H5 | ✓ **Weakly supported** — 8/8 strata, p = 0.008 |
@@ -281,10 +281,12 @@ on the control inversion, the magnitude-is-uninformative result and the placebo,
 | G2 | Violin/ECDF distribution panels | §19.4 | minutes | high — explicitly required |
 | G3 | Two-axis faithfulness × stability plot | §9.11 | minutes | high — explicitly required |
 | G4 | Four literature rows (Bhatt, Stępka, SGShift, ShapShift) | §3 | minutes | medium |
-| G5 | Folktables **year** shift | §14 | ~30 min CPU | medium |
+| G5 | ~~Folktables **year** shift~~ | §14 | done | closed — `ACS years` stage |
 | G6 | Release small checkpoints | §28 | minutes | low |
-| G7 | Scale: LLM / ViT | §31 Version C | GPU | high (reviewer R2) |
+| G7 | Scale: ViT, and a same-size transformer trained from scratch | §31 Version C | GPU | high — needed to attribute DistilBERT's +0.173 excess to pretraining vs architecture |
 | G8 | Training-time regulariser for explanation identifiability | §31 Version C | GPU | out of scope for this paper |
 
-Items beyond the audit, raised by our own review process: re-audit a published result with the
-matched null (R4), EG/LIME budget sweep (R3), §7 restructure (R5), LaTeX conversion.
+Items beyond the audit, raised by our own review process: the matched-operator null itself, re-audit
+of a published result with it (R4), EG/LIME budget sweep (R3), §7 restructure (R5), optimiser-share
+model (T16), TOST for the equivalence claim (T17), semi-synthetic ACS and redundancy sweep
+(T18/T19), adaptation sweep (T20), LaTeX conversion.
