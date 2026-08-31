@@ -42,17 +42,17 @@ at all (slope p = 0.94 over 630× of parameters), update strength does, and Dist
 [+0.104, +0.243] *above* the from-scratch curve at matched update size. Whether that excess comes
 from pretraining or from architecture, this design cannot say.
 
-A fourth result we report against our own interest. On the generator, the magnitude of attribution
-change is nearly uninformative about legitimacy: per probe point, how far an explanation moved
-explains about 1% of the variance in how far it *should* have moved, and two published metrics
-consequently rank correct adaptation as 45% and 89% *worse* than unwarranted drift. The same
-measurement on real covariates **reverses this**, with magnitude explaining 65% of the variance. We
-manipulated update strength, sample size, feature redundancy and uninformative features, and none
-closes the gap. The defensible claim is therefore that magnitude is *unreliable* as evidence of
-legitimacy, not that it is uniformly uninformative — which is enough to disqualify it for auditing,
-since a practitioner cannot tell which regime they are in without a reference. Separately, the
-monitored quantity that does correlate with unwarranted change points the wrong way: higher
-prediction agreement goes with *more* of it.
+A fourth result is conditional, and we establish the condition. Under light, prediction-preserving
+updates the magnitude of attribution change is nearly uninformative about legitimacy: per probe
+point, how far an explanation moved explains about 1% of the variance in how far it *should* have
+moved, and two published metrics consequently rank correct adaptation as 45% and 89% *worse* than
+unwarranted drift. On real covariates the same measurement reverses, with magnitude explaining 65% of
+the variance. The cause is not the data but how far the model travelled: sweeping the update budget
+carries the per-point correlation from +0.15 to **+0.882** as the model covers the full warranted
+distance, and back down once it overshoots. Magnitude therefore becomes informative about legitimacy
+only when the update is heavy enough to move predictions visibly — that is, it fails exactly in the
+regime auditors work in. Separately, the monitored quantity that does correlate with unwarranted
+change points the wrong way: higher prediction agreement goes with *more* of it.
 
 We accompany this with three propositions establishing which explainer classes inherit stability from
 prediction stability: completeness pins the *aggregate* attribution mass of path-integrated
@@ -461,13 +461,13 @@ So the honest summary is the per-point one: **within a shift family, magnitude e
 the variance in whether change was warranted.** The per-explainer contrast is underpowered at ten
 seeds and should not be read as equivalence.
 
-**This result does not generalise, and §7.15 shows where it stops.** Repeating the same per-point
-measurement on real ACS covariates with a known mechanism gives r = +0.81 and 65% of the variance —
-the opposite conclusion. We could not attribute the gap to update strength, sample size, feature
-redundancy, or uninformative features. H2 therefore establishes that magnitude *can* be nearly
-uninformative about legitimacy, not that it generally is; the practical consequence is the same
-either way, since an auditor cannot tell which regime they are in without the reference this paper
-supplies.
+**This result is conditional, and §7.15–7.16 establish on what.** Repeating the same measurement on
+real ACS covariates with a known mechanism gives r = +0.81 — the opposite conclusion — and the cause
+is not the covariates but the update: there the model completes the adaptation (Δ/ω = 1.09), while
+here it covers a quarter of it. Sweeping the update budget on this same generator carries r from
++0.15 to +0.882 as completeness passes through 1 (§7.16). So the claim is not that magnitude is
+uninformative in general, but that **it is uninformative in the light-update regime auditors actually
+work in**, and becomes informative only once the update is heavy enough to move predictions visibly.
 
 The raw magnitudes are consistent with this (IG: 0.0398 vs 0.0386, p = 0.63; KernelSHAP: 0.0388 vs
 0.0415, p = 0.23), and for saliency and Grad×Input they differ in the *wrong direction* — moving
@@ -856,14 +856,54 @@ features, reproducing its 0.94 redundancy — moves r only to 0.665 and leaves t
 1.079 [0.998, 1.159]. The gap is not feature geometry, not optimisation strength, and not sample
 size.
 
-The honest reading is that **H2's scope is the synthetic generator, and we do not know what property
-of it produces the decoupling.** The direction of the residual trends is at least consistent with
-redundancy contributing something (r falls monotonically as copies tighten), but the effect is far
-too small to close a 0.12-to-0.81 gap. H2 should be read as: there exist realistic settings in which
-attribution magnitude is nearly uninformative about legitimacy, and others in which it is highly
-informative — so magnitude cannot be *relied on* as evidence of legitimacy without knowing which
-regime you are in. That is a weaker claim than §7.5 states in isolation, and it is the one the full
-evidence supports.
+None of these is the cause. The cause is §7.16, and it is not a property of the covariates at all.
+
+### 7.16 The gap is adaptation, not substrate (T20)
+
+The four candidates above all ask what is different about the *data*. The remaining possibility is
+that something is different about the *model* — specifically, how far it actually travelled. Define
+
+$$\text{completeness} = \frac{\mathbb{E}[\Delta]}{\mathbb{E}[\omega]}$$
+
+the fraction of the warranted distance the update actually covered. The three settings that
+disagreed differ sharply on it: synthetic shortcut 0.12, synthetic concept 0.54, semi-synthetic 1.09.
+Where a model moves an eighth of the way, almost everything left in Δ is optimiser noise, which by
+construction knows nothing about ω. **Prediction, fixed before running: sweeping the update budget on
+the generator should raise completeness through 1 and carry r up with it.**
+
+It does. On the shortcut family, with nothing changed but the number of update epochs:
+
+| update epochs | completeness | per-point r [95% CI] | agreement |
+|---|---|---|---|
+| 2 | 0.249 | +0.149 [+0.071, +0.228] | 0.951 |
+| 20 | **0.993** | **+0.882 [+0.849, +0.914]** | 0.806 |
+| 100 | 1.143 | +0.856 [+0.818, +0.894] | 0.768 |
+| 400 | 1.161 | +0.509 [+0.455, +0.563] | 0.709 |
+
+r rises from +0.149 to **+0.882** as completeness passes through 1, **recovering the semi-synthetic
+value (+0.81) on the generator itself**. The §7.15 disagreement is therefore not substrate-specific
+and not about feature geometry: it is the difference between a model that finished adapting and one
+that did not. Across the shortcut sweep, distance from perfect adaptation predicts tracking at
+corr(|log completeness|, r) = **−0.870**; pooled across both families it is −0.622, and on the rising
+limb (completeness ≤ 1.05) completeness and r correlate at **+0.756**.
+
+The relationship is *peaked*, not monotone, which is why the naive pooled correlation between
+completeness and r is −0.356 and would mislead: past completeness 1 the update contributes change
+the mechanism does not warrant, and tracking degrades again (0.882 → 0.509 by 400 epochs). The
+concept family sits entirely in that overshoot region (completeness 1.03–3.51) and accordingly shows
+no relationship (−0.081) — it has no rising limb to exhibit.
+
+**What this does to H2.** The claim is not "magnitude is uninformative about legitimacy", and it is
+not the unexplained contradiction §7.15 appeared to leave. It is conditional and mechanistic:
+
+> Attribution magnitude tracks warranted change *only when the update completes the adaptation.*
+> Under the light, prediction-preserving updates that deployment actually uses — agreement 0.95,
+> completeness 0.25 — it carries essentially no such information (r = +0.15, 1.5% of variance).
+
+That is a sharper claim than the original, and it is the practically relevant one: the regime where
+magnitude fails is exactly the regime auditors work in, because heavy updates that complete the
+adaptation are also the ones that visibly move predictions. An auditor cannot use magnitude as
+evidence of legitimacy precisely when they most need to.
 
 ## 8. Ablations
 
@@ -975,12 +1015,13 @@ effect; we are reading the one the argument requires.
    with a mechanism known by construction — but no design can validate ω against real *labels*,
    because the real Bayes predictor is unobservable. This is a property of the quantity, not a gap in
    the experiments.
-2. **H2 does not survive the move to real covariates, and we cannot say why.** Per-point measured
-   change explains 1.5% of the variance in warranted change on the generator and 65% on real ACS
-   covariates (§7.15). Update strength, sample size, feature redundancy and uninformative features
-   were each manipulated and none accounts for the gap. Until the responsible property is identified,
-   H2 supports "magnitude is unreliable as evidence of legitimacy" and not "magnitude is
-   uninformative".
+2. **H2 is conditional on the update completing the adaptation.** Per-point measured change explains
+   1.5% of the variance in warranted change under light updates and 78% once the model covers the
+   full warranted distance (§7.16). The claim is therefore regime-specific: magnitude is
+   uninformative about legitimacy under the prediction-preserving updates auditors face, not in
+   general. We identify the governing quantity (completeness = Δ/ω) but characterise it on two shift
+   families in one generator plus one semi-synthetic setting; whether it governs elsewhere is
+   untested.
 3. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
