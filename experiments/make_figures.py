@@ -58,33 +58,53 @@ def fig_concept(seed=0, magnitude=1.5, explainer="integrated_gradients"):
         )
         idx = np.flatnonzero(keep)
         if family == "covariate":
-            panels.append(("stable: $\\Delta\\approx0=\\omega$", A0, A1,
-                           idx[np.argmin(delta[idx])], 0.0))
-            panels.append(("unwarranted: $\\Delta>0=\\omega$", A0, A1,
-                           idx[np.argmax(delta[idx])], 0.0))
+            j0 = idx[np.argmin(delta[idx])]
+            j1 = idx[np.argmax(delta[idx])]
+            panels.append(("stable", r"$\omega=0$, and $\Delta\approx0$", A0, A1, j0, 0.0,
+                           float(delta[j0]), "ok"))
+            panels.append(("unwarranted", r"$\omega=0$, but $\Delta>0$", A0, A1, j1, 0.0,
+                           float(delta[j1]), "bad"))
         else:
             j = idx[np.argmax(omega[idx])] if idx.size else 0
-            panels.append(("warranted: $\\Delta\\approx\\omega>0$", A0, A1, j, omega[j]))
+            panels.append(("warranted", r"$\omega>0$, and $\Delta\approx\omega$", A0, A1, j,
+                           float(omega[j]), float(delta[j]), "ok"))
 
     use_style()
-    fig, axes = plt.subplots(1, 3, figsize=(8.4, 2.5), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.9), sharey=True)
     rows = []
     x = np.arange(D)
-    for ax, (title, A0, A1, j, w) in zip(axes, panels):
+    block_items = list(BLOCKS.items())
+    for ax, (head, sub, A0, A1, j, w, d, verdict) in zip(axes, panels):
+        # Shade alternate feature blocks. The blocks are the point of the panel -- where mass moves
+        # matters more than that it moved -- and faint dividers did not carry that.
+        for k, (bname, cols) in enumerate(block_items):
+            if k % 2 == 0:
+                ax.axvspan(cols[0] - 0.5, cols[-1] + 0.5, color="0.92", lw=0, zorder=0)
+
         a, b = l1_abs(A0[j]), l1_abs(A1[j])
-        ax.bar(x - 0.2, a, 0.4, color=PALETTE["rho_null"], label="$f_t$")
-        ax.bar(x + 0.2, b, 0.4, color=PALETTE["delta"], label="$f_{t+1}$")
-        ax.set_title(title, fontsize=8.5)
-        ax.set_xticks([np.mean(v) for v in BLOCKS.values()])
-        ax.set_xticklabels(list(BLOCKS), rotation=20, fontsize=6.5)
-        for edge in [b_[-1] + 0.5 for b_ in list(BLOCKS.values())[:-1]]:
-            ax.axvline(edge, color="0.8", lw=0.6)
-        rows += [{"panel": title, "feature": int(i), "f_t": float(a[i]),
-                  "f_t1": float(b[i]), "omega": float(w)} for i in range(D)]
+        ax.bar(x - 0.21, a, 0.42, color=PALETTE["rho_null"], label="$f_t$ (before)", zorder=2)
+        ax.bar(x + 0.21, b, 0.42, color=PALETTE["delta"], hatch="///", edgecolor="white",
+               linewidth=0.3, label="$f_{t+1}$ (after)", zorder=2)
+
+        colour = PALETTE["delta"] if verdict == "bad" else "0.25"
+        ax.set_title(f"{head}\n{sub}", fontsize=8.5, color=colour)
+        # Block names go on the axis; above the panel they collided with the two-line title.
+        ax.set_xticks([np.mean(cols) for _, cols in block_items])
+        # The shortcut and redundant blocks are narrow and their centres sit ~3 features apart, so
+        # horizontal labels butt together. A small rotation separates them without hurting reading.
+        ax.set_xticklabels([b for b, _ in block_items], fontsize=6.4, color="0.35",
+                           rotation=20, ha="right", rotation_mode="anchor")
+        ax.tick_params(axis="x", length=0, pad=1)
+        ax.text(0.5, 0.94, rf"$\Delta={d:.2f}$,  $\omega={w:.2f}$", transform=ax.transAxes,
+                ha="center", va="top", fontsize=7.8, color=colour, fontweight="bold")
+        rows += [{"panel": head, "feature": int(i), "f_t": float(a[i]),
+                  "f_t1": float(b[i]), "omega": float(w), "delta": d} for i in range(D)]
+
     axes[0].set_ylabel("attribution mass")
-    axes[0].legend()
-    fig.suptitle("Predictions preserved on all three inputs; only the middle panel is a defect",
-                 y=1.04)
+    axes[0].legend(loc="upper left", fontsize=7, bbox_to_anchor=(0.0, 0.86))
+    fig.suptitle("Predictions are preserved on all three inputs — only the middle one is a defect",
+                 y=1.10, fontsize=9.5)
+    fig.tight_layout(w_pad=1.4)
     return fig, pd.DataFrame(rows)
 
 
