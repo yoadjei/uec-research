@@ -1,4 +1,4 @@
-# Stable Predictions, Shifting Evidence: Warranted and Unwarranted Explanation Change Under Model Updates
+# The Control Decides the Answer: A Matched-Operator Null for Explanation Change Under Model Updates
 
 *Draft. Sections 7–10 are populated from `paper/tables/` and `figures/`; every number in them is
 produced by `experiments/` and traceable through `results/registry.csv`.*
@@ -18,9 +18,9 @@ update is applied to fresh data from the *source* distribution, so that treatmen
 differ only in the distribution and not in the amount of training. This control changes the
 conclusion. Measured against the seed-retraining floor that prior work uses implicitly, heavy
 fine-tuning looks maximally shift-driven; measured against the matched null it is not shift-driven
-at all, and most of the attribution movement reported after a model update is attributable to the
-optimisation rather than to the new data. Unwarranted change is largest for *light* updates, where
-predictions are best preserved.
+at all. Across 681 runs the matched null reproduces a median **82%** of the attribution movement that
+follows an update, so most of what is reported as shift-induced instability is the optimiser.
+Unwarranted change is largest for *light* updates, where predictions are best preserved.
 
 The sharpest demonstration is a no-shift placebo: on gradient-boosted trees with exact TreeSHAP,
 where nothing whatsoever has shifted, the matched null correctly reports a ratio of 0.98 while the
@@ -31,31 +31,35 @@ settings with a matched null, 64% of them produce attribution movement *smaller*
 same model on a resample of the same data, and only 33% clear that floor — although their own
 flagship examples survive it comfortably.
 
-Two further results follow. First, the magnitude of attribution change **can be nearly uninformative
-about legitimacy**: across thousands of probe points, how much a point's explanation moved explains
-about 1% of the variance in how much it *should* have moved, and two published metrics consequently
-rank correct adaptation as 45% and 89% *worse* than unwarranted drift. Repeating this on real census
-covariates with a known mechanism reverses it — magnitude there explains 65% of the variance — and we
-could not attribute the gap to update strength, sample size, or feature geometry. Magnitude is
-therefore unreliable rather than uniformly uninformative, which is enough to sink its use as
-evidence, and we report the disagreement rather than the favourable half. Second, the monitored quantity that does correlate with unwarranted change
-points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
-accuracy's association reverses sign across shift magnitudes.
+With the control in place, unwarranted change is real but **bounded, and we map the boundary rather
+than the interior**. It appears across MLPs (a 630× parameter range), gradient-boosted trees and a
+small CIFAR ResNet, across seven attribution methods including exact TreeSHAP, so it is neither a
+gradient artefact nor a property of one model class. It weakens on real census covariates with a
+mechanism known by construction (1.20 [1.05, 1.34] for Integrated Gradients) and is **absent on
+DistilBERT** (1.02 [0.97, 1.09], across a tenfold range of update strength). Modelling the optimiser
+share directly shows why that last result is not simply extrapolation: capacity does not predict it
+at all (slope p = 0.94 over 630× of parameters), update strength does, and DistilBERT sits +0.173
+[+0.104, +0.243] *above* the from-scratch curve at matched update size. Whether that excess comes
+from pretraining or from architecture, this design cannot say.
 
-The phenomenon holds across MLPs (over a 630× parameter range), gradient-boosted trees, and a small
-CIFAR ResNet, and across seven attribution methods including exact TreeSHAP, so it is neither a
-gradient artefact nor a property of one model class. **It does not, however, hold everywhere.** On
-DistilBERT (66.9M parameters, pretrained) the ratio is 1.02 [0.97, 1.09] and stays there across a
-tenfold range of update strength, so the empirical claim is bounded: unwarranted change exceeds its
-floor in models trained from scratch up to ~1M parameters, and we find no reliable effect in a
-pretrained transformer. The methodological contribution is unaffected — indeed a ratio of 1.0 is the
-limiting case of the paper's own thesis that most attribution movement after an update is training
-rather than shift. We accompany this with three propositions establishing which
-explainer classes inherit stability from prediction stability: completeness pins the *aggregate*
-attribution mass of path-integrated explainers to within the output change, local-gradient
-explainers inherit no such bound even in aggregate, and Shapley-type explainers are bounded only
-under a coalition-level premise that fine-tuning does not deliver. None of the three protects the
-*allocation* across features — which is the part practitioners read.
+A fourth result we report against our own interest. On the generator, the magnitude of attribution
+change is nearly uninformative about legitimacy: per probe point, how far an explanation moved
+explains about 1% of the variance in how far it *should* have moved, and two published metrics
+consequently rank correct adaptation as 45% and 89% *worse* than unwarranted drift. The same
+measurement on real covariates **reverses this**, with magnitude explaining 65% of the variance. We
+manipulated update strength, sample size, feature redundancy and uninformative features, and none
+closes the gap. The defensible claim is therefore that magnitude is *unreliable* as evidence of
+legitimacy, not that it is uniformly uninformative — which is enough to disqualify it for auditing,
+since a practitioner cannot tell which regime they are in without a reference. Separately, the
+monitored quantity that does correlate with unwarranted change points the wrong way: higher
+prediction agreement goes with *more* of it.
+
+We accompany this with three propositions establishing which explainer classes inherit stability from
+prediction stability: completeness pins the *aggregate* attribution mass of path-integrated
+explainers to within the output change, local-gradient explainers inherit no such bound even in
+aggregate, and Shapley-type explainers are bounded only under a coalition-level premise that
+fine-tuning does not deliver. None of the three protects the *allocation* across features — which is
+the part practitioners read.
 
 ---
 
