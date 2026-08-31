@@ -39,9 +39,15 @@ than unwarranted drift. Second, the monitored quantity that does correlate with 
 points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
 accuracy's association reverses sign across shift magnitudes.
 
-The phenomenon holds across MLPs, gradient-boosted trees, and a small CIFAR ResNet, and across seven
-attribution methods including exact TreeSHAP, so it is neither a gradient artefact nor a property of
-one model class. We accompany this with three propositions establishing which
+The phenomenon holds across MLPs (over a 630× parameter range), gradient-boosted trees, and a small
+CIFAR ResNet, and across seven attribution methods including exact TreeSHAP, so it is neither a
+gradient artefact nor a property of one model class. **It does not, however, hold everywhere.** On
+DistilBERT (66.9M parameters, pretrained) the ratio is 1.02 [0.97, 1.09] and stays there across a
+tenfold range of update strength, so the empirical claim is bounded: unwarranted change exceeds its
+floor in models trained from scratch up to ~1M parameters, and we find no reliable effect in a
+pretrained transformer. The methodological contribution is unaffected — indeed a ratio of 1.0 is the
+limiting case of the paper's own thesis that most attribution movement after an update is training
+rather than shift. We accompany this with three propositions establishing which
 explainer classes inherit stability from prediction stability: completeness pins the *aggregate*
 attribution mass of path-integrated explainers to within the output change, local-gradient
 explainers inherit no such bound even in aggregate, and Shapley-type explainers are bounded only
@@ -645,31 +651,55 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
-### 7.13 Transformer scale: an unresolved null (T15, Fig. 12)
+### 7.13 The effect does not transfer to transformer scale (T15, Fig. 12)
 
-The largest model we tested is DistilBERT (66.9M parameters), fine-tuned on IMDB and updated
+The largest model we tested is DistilBERT (66,955,010 parameters), fine-tuned on IMDB and updated
 additively with either more IMDB (matched null) or Rotten Tomatoes (treatment), with token-level
-attributions on the embedding layer. Three seeds, 250-example probe.
+attributions on the embedding layer. **The effect is absent**, and it stays absent across a tenfold
+range of update strength:
 
-**The effect does not appear.** Integrated Gradients gives a ratio of **0.985 [0.946, 1.038]** and
-Grad×Input **1.035 [1.015, 1.052]**, against 1.36–1.73 for every other model class we measured. The
-diagnostics are healthy — prediction agreement 0.908, 61% of probe points preserved — so this is a
-clean null rather than a failed measurement.
+| update lr | agreement | preserved | IG ratio [95% CI] | Grad×Input ratio [95% CI] |
+|---|---|---|---|---|
+| 1×10⁻⁶ | 0.968 | 0.72 | 1.090 [0.952, 1.221] | 1.038 [0.980, 1.096] |
+| 3×10⁻⁶ | 0.955 | 0.64 | 1.076 [0.978, 1.161] | **1.115 [1.045, 1.169]** |
+| 1×10⁻⁵ | 0.955 | 0.65 | 0.966 [0.909, 1.028] | 1.043 [0.985, 1.087] |
+| pooled | 0.959 | 0.67 | **1.023 [0.970, 1.093]** | — |
 
-We do **not** report it as a scale bound, because it is confounded with update strength and our own
-data supplies the confound. The DistilBERT update was heavy: the entire source set replayed
-alongside the new data. §7.3 shows the ratio collapsing toward 1 as updates grow, in every model
-class, whether or not anything shifted — and at DistilBERT's agreement of 0.908 our *20-dimensional
-MLPs* already read 1.05–1.13. The observation is therefore equally consistent with the phenomenon
-being absent at transformer scale and with the update being too large to see it through.
+Every Integrated Gradients interval covers 1. The single exception anywhere is Grad×Input at
+3×10⁻⁶ (1.115 [1.045, 1.169]) — a real but small effect at one setting out of six, which we report
+rather than round away.
 
-The disambiguating experiment sweeps update strength at 66M parameters, comparing against the
-tabular curve **at matched prediction agreement** rather than matched learning rate. The
-interpretation of each possible outcome was fixed before running it
-(`docs/preregistration_scale.md`), including the commitment to report a scale bound in the abstract
-if that is what the data says. This section will be completed either way; at present the honest
-statement is that the largest model we tested shows no effect under one update regime, and we do
-not yet know why.
+**The obvious confound is excluded by design.** An earlier run with a heavy update gave 0.985
+[0.946, 1.038], and since §7.3 shows the ratio collapsing toward 1 as updates grow, that number
+alone was uninterpretable. So we swept update strength and compared **at matched prediction
+agreement**, which is the only measure of update size comparable between a 20-feature MLP and a
+transformer:
+
+| agreement | MLPs | DistilBERT |
+|---|---|---|
+| 0.940 | 1.27 | ~1.05 |
+| 0.960 | 1.47 | ~1.05 |
+| 0.988 | 1.47 | ~1.05 |
+
+DistilBERT's updates were *lighter* than the tabular ones that produce 1.27–1.47, and the ratio did
+not move. Making the update tenfold gentler changed it from 0.97 to 1.09. The phenomenon is not
+being hidden by update size; it is not there.
+
+**Two candidate explanations, and we can distinguish them.** DistilBERT differs from every other
+model we tested in two ways at once: it is 62× larger *and* it begins from a pretrained checkpoint,
+where the MLPs, trees and CNN all train from scratch. At these learning rates the pretrained body
+barely moves, so attributions stay anchored to a representation that is **identical in both arms** —
+which is exactly the condition under which Δ and ρ_null must coincide. If that is the mechanism,
+the finding is not "the effect vanishes at scale" but **"a pretrained initialisation confers
+explanation stability under distribution shift"**, which is a sharper claim than the one we set out
+to test. Separating the two requires a transformer of similar size trained from scratch; that
+experiment is not in this paper, and we do not assert the pretraining explanation without it.
+
+**Limits of this result.** Three seeds, one architecture, one shift pair, and per-seed IG ratios at
+the lightest update of 1.22, 1.10 and 0.95 — substantial spread. We claim *no reliable effect*, not
+*exactly zero*. The interpretation of every possible outcome, including this one, was fixed before
+the sweep ran (`docs/preregistration_scale.md`), together with the commitment to report a null in
+the abstract rather than the appendix.
 
 ### 7.14 Vision sanity check (T9, Fig. 9)
 
@@ -804,20 +834,21 @@ effect; we are reading the one the argument requires.
 2. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
-3. **Scale — the sharpest open question, and it may be a bound rather than a gap.** The effect is
-   stable across a 630× parameter range within MLPs (1.7k → 1.07M, §8.1) and holds for trees and a
-   small CNN. But on DistilBERT at 66.9M parameters it **disappears** (0.985 [0.946, 1.038], §7.13).
-   That measurement is confounded with update strength and the disambiguating sweep is pending, so
-   we currently claim the phenomenon for MLPs, gradient-boosted trees and small CNNs, and claim
-   nothing about transformers. If the sweep confirms the null, the correct statement is that the
-   phenomenon is bounded to smaller models — and we have pre-committed to reporting that in the
-   abstract.
-4. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
-5. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
+3. **Scale is a bound, not a gap.** The effect is stable across a 630× parameter range within MLPs
+   (1.7k → 1.07M, §8.1) and holds for trees and a small CNN, but it is **absent on DistilBERT**
+   (1.02 [0.97, 1.09] pooled, across a tenfold range of update strength, §7.13). The empirical claim
+   therefore covers models trained from scratch up to ~1M parameters; we find no reliable effect in
+   a 66.9M-parameter pretrained transformer. Whether that is scale or pretraining is unresolved and
+   needs a same-size transformer trained from scratch.
+4. **Three seeds on the GPU arms.** The DistilBERT and ResNet results rest on three seeds each,
+   which is enough to see a null of this size but not enough to characterise its variance; per-seed
+   IG ratios at the lightest update span 0.95 to 1.22.
+5. **Attribution only.** No concept-based explanations, no attention, no counterfactuals.
+6. **Two explainers are noise-dominated at our budgets** (EG at 32 samples, LIME partly). Their
    ratios are uninformative rather than null, and larger sample budgets would change them.
-6. **The update operator is a plain Adam fine-tune.** We ablate learning rate and epochs but not
+7. **The update operator is a plain Adam fine-tune.** We ablate learning rate and epochs but not
    optimiser family, regularisation, or replay.
-7. **`ω` compares the Bayes predictor's IG to a model's IG.** Both are IG with a common baseline, so
+8. **`ω` compares the Bayes predictor's IG to a model's IG.** Both are IG with a common baseline, so
    the comparison is like-for-like, but a model that is not close to Bayes-optimal will show change
    relative to a reference it was never going to match.
 
