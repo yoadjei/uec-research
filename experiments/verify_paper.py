@@ -143,6 +143,23 @@ def main():
         c("7.13 DistilBERT agreement", sw.agree_treat.mean(), 0.959, tol=0.005,
           source="scale_text_sweep_ig")
 
+    eq = load("T17_equivalence.csv", TABLES)
+    if eq is not None:
+        c("7.5 explainers equivalent at margin 0.10", eq.equivalent.sum(), 1, tol=0,
+          source="T17_equivalence")
+        lime = eq[eq.explainer == "lime"].iloc[0]
+        c("7.5 LIME ratio gap", -lime["diff"], 0.639, tol=0.01, source="T17_equivalence")
+        c("7.5 LIME p, difference", lime.p_difference, 0.002, tol=0.001,
+          source="T17_equivalence")
+
+    pp = load("T17b_per_point_association.csv", TABLES)
+    if pp is not None:
+        for fam, expected in [("concept", 0.121), ("shortcut", -0.104)]:
+            c(f"7.5 per-point r, {fam}", pp[pp.family == fam].r.iloc[0], expected, tol=0.005,
+              source="T17b_per_point")
+        c("7.5 per-point variance explained (max)", pp.r2.max(), 0.015, tol=0.002,
+          source="T17b_per_point")
+
     ab = load("T5_ablations.csv", TABLES)
     if ab is not None:
         core = ab[ab.value.isin(["spearman", "cosine", "l1", "abs", "all", "reliable"])]
