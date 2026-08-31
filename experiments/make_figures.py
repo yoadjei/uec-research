@@ -70,7 +70,7 @@ def fig_concept(seed=0, magnitude=1.5, explainer="integrated_gradients"):
                            float(omega[j]), float(delta[j]), "ok"))
 
     use_style()
-    fig, axes = plt.subplots(1, 3, figsize=(9.0, 2.9), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(9.0, 3.2), sharey=True)
     rows = []
     x = np.arange(D)
     block_items = list(BLOCKS.items())
@@ -87,23 +87,23 @@ def fig_concept(seed=0, magnitude=1.5, explainer="integrated_gradients"):
                linewidth=0.3, label="$f_{t+1}$ (after)", zorder=2)
 
         colour = PALETTE["delta"] if verdict == "bad" else "0.25"
-        ax.set_title(f"{head}\n{sub}", fontsize=8.5, color=colour)
+        ax.set_title(f"{head}\n{sub}", color=colour)
         # Block names go on the axis; above the panel they collided with the two-line title.
         ax.set_xticks([np.mean(cols) for _, cols in block_items])
         # The shortcut and redundant blocks are narrow and their centres sit ~3 features apart, so
         # horizontal labels butt together. A small rotation separates them without hurting reading.
-        ax.set_xticklabels([b for b, _ in block_items], fontsize=6.4, color="0.35",
+        ax.set_xticklabels([b for b, _ in block_items], fontsize=8, color="0.35",
                            rotation=20, ha="right", rotation_mode="anchor")
         ax.tick_params(axis="x", length=0, pad=1)
         ax.text(0.5, 0.94, rf"$\Delta={d:.2f}$,  $\omega={w:.2f}$", transform=ax.transAxes,
-                ha="center", va="top", fontsize=7.8, color=colour, fontweight="bold")
+                ha="center", va="top", fontsize=9.5, color=colour, fontweight="bold")
         rows += [{"panel": head, "feature": int(i), "f_t": float(a[i]),
                   "f_t1": float(b[i]), "omega": float(w), "delta": d} for i in range(D)]
 
     axes[0].set_ylabel("attribution mass")
-    axes[0].legend(loc="upper left", fontsize=7, bbox_to_anchor=(0.0, 0.86))
-    fig.suptitle("Predictions are preserved on all three inputs — only the middle one is a defect",
-                 y=1.10, fontsize=9.5)
+    axes[0].legend(loc="upper left", fontsize=8.5, bbox_to_anchor=(0.0, 0.86))
+    # The "predictions are preserved on all three" point belongs in the caption, not repeated
+    # above the panels.
     fig.tight_layout(w_pad=1.4)
     return fig, pd.DataFrame(rows)
 
@@ -141,8 +141,6 @@ def main():
         made.append(save(fig, FIGURES / "fig2_headline.png", data))
         fig, data = F.fig_headline(syn, family="shortcut")
         made.append(save(fig, FIGURES / "fig2c_shortcut.png", data))
-        fig, data = F.fig_distributions(syn)
-        made.append(save(fig, FIGURES / "fig10_distributions.png", data))
         fig, data = F.fig_eps_sweep(syn)
         made.append(save(fig, FIGURES / "fig4_eps_sweep.png", data))
         fig, data = F.fig_invisibility(syn)
@@ -155,6 +153,9 @@ def main():
     if perpoint:
         fig, data = F.fig_warranted_alignment(perpoint)
         made.append(save(fig, FIGURES / "fig3_warranted.png", data))
+        # Violins + ECDFs (audit 19.4). This takes the per-point arrays, not the summary frame.
+        fig, data = F.fig_distributions(perpoint)
+        made.append(save(fig, FIGURES / "fig10_distributions.png", data))
     if theory is not None:
         fig, data = F.fig_theory(theory)
         made.append(save(fig, FIGURES / "fig5_theory.png", data))
