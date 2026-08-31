@@ -190,6 +190,21 @@ def main():
               and np.std(pp[k][1]) > 1e-12]
         c("7.15 semi-synthetic per-point r", np.mean(rs), 0.807, tol=0.01, source="semisynthetic")
 
+    ad = load("adaptation.parquet")
+    if ad is not None:
+        sc = ad[ad.family == "shortcut"].groupby("update_epochs")
+        c("7.16 shortcut r at 2 epochs", sc.r.mean().loc[2], 0.149, tol=0.01, source="T20")
+        c("7.16 shortcut r at 20 epochs", sc.r.mean().loc[20], 0.882, tol=0.01, source="T20")
+        c("7.16 completeness at 20 epochs", sc.completeness.mean().loc[20], 0.993, tol=0.01,
+          source="T20")
+        c("7.16 shortcut r at 400 epochs", sc.r.mean().loc[400], 0.509, tol=0.01, source="T20")
+        s = ad[ad.family == "shortcut"]
+        c("7.16 corr(|log completeness|, r), shortcut",
+          np.corrcoef(np.abs(np.log(s.completeness)), s.r)[0, 1], -0.870, tol=0.01, source="T20")
+        rise = ad[ad.completeness <= 1.05]
+        c("7.16 rising-limb corr", np.corrcoef(rise.completeness, rise.r)[0, 1], 0.756,
+          tol=0.01, source="T20")
+
     rd = load("redundancy_sweep.parquet")
     if rd is not None:
         c("7.15 redundancy: r at max collinearity", rd.per_point_r.min(), 0.665, tol=0.02,
