@@ -31,11 +31,10 @@ settings with a matched null, 64% of them produce attribution movement *smaller*
 same model on a resample of the same data, and only 33% clear that floor — although their own
 flagship examples survive it comfortably.
 
-Two further results follow. First, the magnitude of attribution change is **uninformative about
-legitimacy**: for six of seven explainers, change relative to the matched null is statistically
-indistinguishable between a shift that leaves the Bayes-optimal predictor untouched and one that
-rewrites it, and two published metrics consequently rank correct adaptation as 45% and 89% *worse*
-than unwarranted drift. Second, the monitored quantity that does correlate with unwarranted change
+Two further results follow. First, the magnitude of attribution change carries **little information
+about legitimacy**: across thousands of probe points, how much a point's explanation moved explains
+about 1% of the variance in how much it *should* have moved, and two published metrics consequently
+rank correct adaptation as 45% and 89% *worse* than unwarranted drift. Second, the monitored quantity that does correlate with unwarranted change
 points the wrong way: higher prediction agreement goes with *more* unwarranted change, while target
 accuracy's association reverses sign across shift magnitudes.
 
@@ -392,43 +391,71 @@ five explainers whose noise floor is below their null, the range is **1.40–1.7
 ranges and treat the budget-limited pair as a finding about explainer budgets rather than evidence
 about the phenomenon.
 
-### 7.5 H2: magnitude is uninformative about legitimacy (Fig. 2c, Fig. 3, T4)
+### 7.5 H2: magnitude carries little information about legitimacy (Fig. 2c, Fig. 3, T4, T17)
 
-This is the central result. Compare a shift where the mechanism does not change (covariate, ω = 0)
-with one where it changes a great deal (shortcut removal, ω = 0.326), under the same update:
+Does the amount an explanation moves tell you whether it *should* have moved? We test this two ways
+and report both, because they have very different statistical power and they do not agree.
 
-The two families use different source models (the shortcut source is trained on data where the
-shortcut is predictive), so raw Δ is not a controlled contrast. The controlled comparison normalises
-each condition by **its own** matched null, which removes that confound:
+**The well-powered form: per probe point (Fig. 3, T17b).** Within a single shift family, each point
+has its own warranted change ω, so measured change can be regressed on it directly — thousands of
+points rather than ten seeds. Correlations are computed within seed and aggregated across seeds, so
+the clustering is respected:
 
-| explainer | ratio, covariate (ω=0) | ratio, shortcut (ω=0.33) | paired p |
+| shift family | r (per-seed mean) [95% CI] | variance explained | points |
 |---|---|---|---|
-| IG | 1.52 [1.36, 1.71] | 1.56 [1.39, 1.77] | **0.56** |
-| Saliency | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | **0.38** |
-| SmoothGrad | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | **0.43** |
-| Grad×Input | 1.67 [1.49, 1.87] | 1.57 [1.41, 1.76] | **0.38** |
-| KernelSHAP | 1.40 [1.27, 1.55] | 1.59 [1.43, 1.80] | **0.16** |
-| EG | 1.02 [1.02, 1.03] | 1.02 [1.01, 1.02] | **0.23** |
-| LIME | 1.25 [1.14, 1.37] | 1.86 [1.67, 2.08] | 0.002 |
+| concept | +0.121 [+0.084, +0.157] | **1.5%** | 3,237 |
+| shortcut removal | −0.104 [−0.192, −0.015] | **1.1%** | 4,329 |
 
-For **six of seven explainers** the amount of attribution change, relative to what the same update
-would have produced on in-distribution data, is **statistically indistinguishable** between a shift
-that leaves the Bayes-optimal predictor untouched and one that rewrites it. LIME is the exception,
-and it is the explainer whose own noise floor exceeds its matched null.
+Δ stays in a flat band around 0.04–0.06 while ω ranges from 0 to 0.85 — far below the Δ = ω diagonal.
+Both intervals exclude zero, so we do **not** claim the association is absent; we claim it is
+negligible. The warranted change accounts for roughly **one percent** of the variance in the measured
+change, across an eightfold range of ω. An auditor who knows how much an explanation moved has
+learned almost nothing about whether the mechanism moved.
 
-The raw magnitudes tell the same story (IG: 0.0398 vs 0.0386, p = 0.63; KernelSHAP: 0.0388 vs
+We state this as a magnitude with an interval rather than testing it against an equivalence margin.
+Any margin we chose after seeing these numbers would be the post-hoc move this paper criticises
+elsewhere, and the interval already answers the question.
+
+**The weaker form: per explainer.** Comparing the ratio Δ/ρ_null between a shift that leaves the
+Bayes-optimal predictor untouched (covariate, ω = 0) and one that rewrites it (shortcut removal,
+ω = 0.326). The two families use different source models, so raw Δ is not a controlled contrast;
+normalising each condition by **its own** matched null removes that confound. TOST is against a
+margin of ±0.10 on the ratio scale, fixed from the no-shift placebo's own spread (§7.1: 1.000–1.082)
+before these comparisons were run.
+
+Ratios below are pooled (mean Δ over mean ρ_null), as everywhere else in the paper; the tests are
+computed on per-seed ratios, which is what pairing requires.
+
+| explainer | ratio, covariate (ω=0) | ratio, shortcut (ω=0.33) | p, difference | p, TOST | equivalent? |
+|---|---|---|---|---|---|
+| IG | 1.52 [1.36, 1.71] | 1.56 [1.39, 1.77] | 0.56 | 0.42 | no |
+| Saliency | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | 0.38 | 0.22 | no |
+| SmoothGrad | 1.73 [1.58, 1.89] | 1.69 [1.54, 1.88] | 0.43 | 0.21 | no |
+| Grad×Input | 1.67 [1.49, 1.87] | 1.57 [1.41, 1.76] | 0.38 | 0.46 | no |
+| KernelSHAP | 1.40 [1.27, 1.55] | 1.59 [1.43, 1.80] | 0.16 | 0.79 | no |
+| EG | 1.02 [1.02, 1.03] | 1.02 [1.01, 1.02] | 0.23 | <0.001 | yes |
+| LIME | 1.25 [1.14, 1.37] | 1.86 [1.67, 2.08] | **0.002** | 1.00 | no |
+
+**Only one of seven passes**, and that one is uninformative: EG's two ratios are both ≈1.02, meaning
+its measured change is barely above its own matched null in either condition, so the equivalence is a
+statement about EG's insensitivity rather than about the shift. The five explainers with p between
+0.16 and 0.56 are a **failure to reject with n = 10 seeds**, not evidence of equivalence, and we do
+not read them as such.
+
+**LIME is a genuine exception and we name it rather than averaging it away.** Its ratio is 0.64
+higher under shortcut removal than under covariate shift ([0.43, 0.84], p = 0.002) — the one
+explainer whose magnitude *does* separate the two conditions here. It is also the explainer whose own
+noise floor exceeds its matched null (§7.1), so we cannot tell whether this is sensitivity to the
+mechanism or its sampling variance interacting with the harder condition, and we do not claim it as
+either.
+
+So the honest summary is the per-point one: **within a shift family, magnitude explains about 1% of
+the variance in whether change was warranted.** The per-explainer contrast is underpowered at ten
+seeds and should not be read as equivalence.
+
+The raw magnitudes are consistent with this (IG: 0.0398 vs 0.0386, p = 0.63; KernelSHAP: 0.0388 vs
 0.0415, p = 0.23), and for saliency and Grad×Input they differ in the *wrong direction* — moving
 **more** when nothing should change than when everything should.
-
-**The per-point version is sharper still (Fig. 3).** Within a single shift family, plotting each
-probe point's measured change against its own warranted change gives a flat horizontal band well
-below the Δ = ω diagonal: Δ stays at roughly 0.04–0.06 while ω ranges from 0 to 0.85, with
-r = 0.10 under concept shift and r = −0.09 under shortcut removal. The measured change does not
-track the warranted change *at all* — not weakly, not with the wrong slope, but with essentially
-zero correlation across an eightfold range of ω.
-
-Under a light update, then, attribution change carries essentially no information about whether the
-underlying mechanism moved.
 
 UEC separates what magnitude cannot: **+0.014 under covariate shift** (unwarranted change present)
 versus **−0.31 under shortcut removal** (the model moved far *less* than warranted).
