@@ -14,7 +14,7 @@ Every section of the audit, what was done, and where the evidence is. Status cod
 
 | Audit instruction | Status | Evidence |
 |---|---|---|
-| Reframe: narrow question, redesign metric, drop the branding | **DONE** | Title is audit title #1; "Explanation Drift" and "EDS" appear nowhere |
+| Reframe: narrow question, redesign metric, drop the branding | **DONE** | "Explanation Drift" and "EDS" appear nowhere. Title was audit title #1 until the final pass; it is now *The Control Decides the Answer*, because the matched null — which the audit did not anticipate — turned out to be the contribution that survives every scoping |
 | Drop "EDS" as a metric | **DONE** | `docs/terminology_map.md` §"Claims we may not make" |
 | Scope 5×5×4×3 is unachievable | **DONE** | 2 tabular model classes, 1 vision sanity check, 4 shift families |
 
@@ -50,7 +50,7 @@ Every section of the audit, what was done, and where the evidence is. Status cod
 | ID | Status | Result |
 |---|---|---|
 | H1 unwarranted change > floor | **DONE** | **Supported.** 7/7 explainers, Holm p = 0.014, Cliff's δ ≤ +0.98 |
-| H2 concept-shift change aligns with ω | **DONE** | **Refined into a stronger result** — §7.4: magnitude is *uninformative* about ω |
+| H2 concept-shift change aligns with ω | **DONE** | **Conditional, and the condition is identified.** The audit's gate was ρ>0.5 (escalate if <0.3). On synthetic light updates we get +0.12 and −0.10, which *should* have triggered escalation and instead became a headline. §7.16 resolves it: alignment is governed by adaptation completeness Δ/ω, reaching **+0.88** at completeness 0.99 and **+0.81** semi-synthetically. The audit's gate passes where the model finishes adapting, and fails where it does not — which is the deployment regime |
 | H3 not predicted by accuracy/ECE/agreement | **DONE** | **Partly refuted**, and worse than the hypothesis: agreement correlates *positively* (§7.7) |
 | H4 method-class asymmetry | **DONE** | **Supported.** 0/20,000 IG violations; 60.8% Grad×Input |
 | H5 Rashomon-position updates | **DONE** | **Weakly supported.** 8/8 strata, sign test p = 0.008; confounded marginally (§7.8b) |
@@ -174,7 +174,7 @@ Causal / shortcut / redundant / noise blocks, covariate / concept / shortcut fam
 
 | Kill condition | Triggered? |
 |---|---|
-| (a) seed floor ≥ shift-induced change for all explainers | **No** — but note this *would* have fired on `ρ_seed` alone at light updates. The matched null is why the paper exists |
+| (a) seed floor ≥ shift-induced change for all explainers | **YES on `ρ_seed`, and we say so in the main text.** Headline Δ/ρ_seed median **0.31** — the effect is *inverted* against the audit's control. §7.3 confronts this directly: the placebo, whose answer is fixed in advance, is what disqualifies ρ_seed (0.98 correct vs 1.90 invented). This is the paper's largest reviewer exposure |
 | (b) IG violates its bound | **No** — 0/20,000 |
 | (c) all explainers behave identically | **No** — EG noise-dominated, LIME partly |
 | (d) results flip across distances | **No** — τ = 1.00 |
@@ -206,19 +206,42 @@ Phases 0–6 all executed. T01–T13 all discharged; T06's "deterministic explai
 | Kill the name and the metric | Done on day one |
 | Phase 0 before compute | Done; gap survived |
 | MVE before anything else | Done; gate passed |
-| "The project is decided by one number" | **Superseded.** The ratio is 1.4–2.1, solid but moderate. What carries the paper is the *control inversion*, the *magnitude-is-uninformative* result, and the *placebo* — qualitative claims a bigger ratio would not strengthen |
+| "The project is decided by one number" | **Superseded, and we lose on the audit's version of it.** Against ρ_seed the number is 0.31 (audit: reject below 1.3). Against ρ_null it is 1.4–2.1. The paper argues the denominator, not the numerator, and rests that argument on the placebo |
 | Target ICLR with Version B only | Version B delivered |
 
 ---
 
+## Beyond the audit
+
+Five pieces of work the audit did not ask for. The first is the paper's contribution; the rest exist
+because reviewing our own claims turned up holes the audit could not have foreseen.
+
+| Work | Why it exists | Where |
+|---|---|---|
+| **Matched-operator null `ρ_null`** | The audit specified only `ρ_seed`. That control fails a no-shift placebo (reports 1.90 where the answer is 1.00), so the audit's own decisive number was measured against a broken reference | §7.2, §7.3 |
+| **Re-audit of a published result** | The audit says to differentiate from Delta-Audit; applying our control to their 45 settings is stronger than a table comparison | §7.7 |
+| **Optimiser-share model (T16)** | The 0.48–0.98 share range was a documented correlation with no mechanism. Capacity turns out not to predict it (p = 0.94 over 630×); update strength does | §7.12b |
+| **Semi-synthetic ACS + redundancy sweep (T18, T19)** | The audit's ω is exact only on a generator that supplies its own covariates. Real covariates with a known mechanism test whether the closed form is a Gaussian artefact (it is not: exact to 1.1e-14) | §7.15 |
+| **Adaptation sweep (T20)** | §7.15 produced a contradiction the audit never anticipated. Completeness Δ/ω resolves it and converts H2 from an unexplained reversal into a conditional claim | §7.16 |
+
+Two of these were prompted by errors we caught in our own design: the first semi-synthetic tilt was
+calibrated too weakly (domain AUC 0.759 against the synthetic 0.902) and would have produced a false
+null, and an early version drew the null without replacement and the treatment with it, handicapping
+the treatment. Both are recorded in the runners' comments so the corrections are auditable.
+
 ## Summary of genuine gaps
 
 Closed in this pass: **E6 faithfulness × stability**, the five missing ablations, and `configs/`
-(with a drift test). Test count 89 → 94.
+(with a drift test). Test count 89 → 101; 14 figures, 25 tables, 30 literature rows.
 
 Remaining and stated as limitations, not hidden:
 
-1. Folktables **year** shift not run (state shift only, 4 states).
-2. Violin/ECDF distribution panels not drawn (CIs and exceedance rates are).
-3. ResNet-18 replaced by a 78k-parameter ResNet — a compute-budget deviation.
-4. Scale: nothing here speaks to LLMs or ViTs.
+1. Violin/ECDF distribution panels not drawn (CIs and exceedance rates are).
+2. ResNet-18 replaced by a 78k-parameter ResNet — a compute-budget deviation.
+3. Scale: DistilBERT is covered, but nothing here speaks to ViTs, and the +0.173 excess over the
+   from-scratch curve cannot be attributed to pretraining rather than architecture without a
+   same-size transformer trained from scratch (audit §31 Version C).
+4. Completeness (§7.16) is characterised on two shift families in one generator plus one
+   semi-synthetic setting. Whether it governs tracking elsewhere is untested.
+
+Closed since the previous pass: Folktables **year** shift (2018 → 2022, `ACS years` stage).
