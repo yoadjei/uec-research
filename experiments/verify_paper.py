@@ -160,6 +160,12 @@ def main():
         c("7.5 per-point variance explained (max)", pp.r2.max(), 0.015, tol=0.002,
           source="T17b_per_point")
 
+    sr = load("share_model_rows.parquet")
+    if sr is not None:
+        c("abstract median optimiser share", sr.share.median(), 0.82, tol=0.01,
+          source="share_model_rows")
+        c("abstract share, n runs", len(sr), 681, tol=0, source="share_model_rows")
+
     sm = load("T16_share_model.csv", TABLES)
     if sm is not None:
         s = sm.iloc[0]
