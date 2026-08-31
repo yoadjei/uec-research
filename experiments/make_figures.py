@@ -89,6 +89,13 @@ def fig_concept(seed=0, magnitude=1.5, explainer="integrated_gradients"):
 
 
 def main():
+    # same guard as make_tables: a clean clone has no parquets, and silently replacing the
+    # committed figures with nothing is worse than doing nothing
+    needed = ["synthetic_metrics.parquet", "sweep_regime.parquet", "vision_metrics.parquet"]
+    if not any((RESULTS / f).exists() for f in needed):
+        print("No result files found in results/. Committed figures left untouched.\n"
+              "Generate results first:\n\n    python experiments/reproduce.py\n")
+        return
     use_style()
     FIGURES.mkdir(parents=True, exist_ok=True)
     pin_threads(4)

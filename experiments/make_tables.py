@@ -245,7 +245,37 @@ def table_theory(theory):
     } for fam, s in theory.groupby("family")])
 
 
+REQUIRED_INPUTS = {
+    "synthetic_metrics.parquet": "python experiments/run_synthetic.py",
+    "sweep_regime.parquet": "python experiments/sweep_regime.py",
+    "differentiation.parquet": "python experiments/run_differentiation.py",
+    "trees_metrics.parquet": "python experiments/run_trees.py",
+}
+
+
+def _guard():
+    """Refuse to overwrite committed tables with nothing.
+
+    On a clean clone the parquets are absent (they are regenerable and gitignored). Writing an
+    empty tables.md over the real one is silent data loss for anyone following the README.
+    """
+    missing = [f for f in REQUIRED_INPUTS if not (RESULTS / f).exists()]
+    if len(missing) == len(REQUIRED_INPUTS):
+        print("No result files found in results/. Nothing to build, and the committed tables "
+              "will not be overwritten.\n\nGenerate them first:\n")
+        for cmd in dict.fromkeys(REQUIRED_INPUTS.values()):
+            print(f"    {cmd}")
+        print("\nOr run everything in order:\n\n    python experiments/reproduce.py\n")
+        return False
+    if missing:
+        print(f"note: {len(missing)} input(s) absent, their tables will be skipped: "
+              f"{', '.join(missing)}\n")
+    return True
+
+
 def main():
+    if not _guard():
+        return
     OUT.mkdir(parents=True, exist_ok=True)
     syn = _load("synthetic_metrics.parquet")
     folk = _load("folktables_metrics.parquet")
