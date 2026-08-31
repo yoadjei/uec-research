@@ -1,0 +1,7 @@
+explainer,update_lr,agree,preserved,delta,rho_null,ratio,lo,hi
+gradient_x_input,1e-06,0.968,0.7173,0.1172,0.113,1.0376,0.9798,1.0955
+gradient_x_input,3e-06,0.9547,0.636,0.1885,0.169,1.1152,1.045,1.169
+gradient_x_input,1e-05,0.9547,0.6533,0.2593,0.2485,1.0431,0.985,1.0872
+integrated_gradients,1e-06,0.968,0.7173,0.0876,0.0804,1.0902,0.9522,1.2205
+integrated_gradients,3e-06,0.9547,0.636,0.1301,0.121,1.0755,0.9781,1.1612
+integrated_gradients,1e-05,0.9547,0.6533,0.1965,0.2034,0.9659,0.9089,1.0277
