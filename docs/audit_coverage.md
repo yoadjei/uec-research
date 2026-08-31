@@ -236,12 +236,14 @@ Closed in this pass: **E6 faithfulness × stability**, the five missing ablation
 
 Remaining and stated as limitations, not hidden:
 
-1. Violin/ECDF distribution panels not drawn (CIs and exceedance rates are).
-2. ResNet-18 replaced by a 78k-parameter ResNet — a compute-budget deviation.
-3. Scale: DistilBERT is covered, but nothing here speaks to ViTs, and the +0.173 excess over the
+1. ResNet-18 replaced by a 78k-parameter ResNet — a compute-budget deviation.
+2. Scale: DistilBERT is covered, but nothing here speaks to ViTs, and the +0.173 excess over the
    from-scratch curve cannot be attributed to pretraining rather than architecture without a
    same-size transformer trained from scratch (audit §31 Version C).
-4. Completeness (§7.16) is characterised on two shift families in one generator plus one
+3. Completeness (§7.16) is characterised on two shift families in one generator plus one
    semi-synthetic setting. Whether it governs tracking elsewhere is untested.
 
-Closed since the previous pass: Folktables **year** shift (2018 → 2022, `ACS years` stage).
+Closed since the previous pass: Folktables **year** shift (2018 → 2022, `ACS years` stage),
+and the **violin/ECDF distribution panels** (audit §19.4) — the builder existed but was
+not wired into `make_figures.py`, so Fig. 10 had been rendering a weaker median/IQR
+summary instead.
