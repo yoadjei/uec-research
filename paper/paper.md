@@ -692,7 +692,29 @@ result that matters for the covariate reading is that **Michigan — the state w
 most defensible — still shows a ratio of 1.70**, so the effect is not an artifact of unacknowledged
 concept shift riding along with the covariate shift.
 
-### 7.13 The effect does not transfer to transformer scale (T15, Fig. 12)
+### 7.12b What predicts how much of the change is just the optimiser? (T16)
+
+Across every setting in this paper, the fraction of measured attribution change that the matched null
+reproduces — the **optimiser share**, ρ_null/Δ — ranges from 0.48 to 0.98. A range that wide is a
+documented correlation unless something predicts where a setting lands in it. Two covariates are
+comparable across model classes, and the design separates them: the width sweep holds the update
+fixed and varies parameters 630×, while the regime sweep holds capacity fixed and varies update
+strength. The share is bounded, so it is modelled on a logit scale; a linear fit on the raw share
+extrapolates to impossible values.
+
+**Capacity does not predict it.** Over a 630× parameter range (1,729 → 1,070,080) the share moves
+from 0.665 to 0.701, and the slope on log₁₀ parameters is −0.007 [−0.197, +0.184], p = 0.94. This is
+a precise null, not an underpowered one: the interval excludes any effect large enough to matter.
+
+**Update strength does.** The slope on prediction agreement is −9.13 [−12.07, −6.20],
+p = 1.7 × 10⁻⁹: as the update grows heavier and agreement falls from 0.960 to 0.891, the share rises
+monotonically from 0.725 to 0.939. This is §7.3 restated as a continuous relationship — heavier
+updates are more nearly *all* optimiser.
+
+So the range is not arbitrary, but it is governed by update size rather than model size, which
+matters for how §7.13 should be read.
+
+### 7.13 The effect does not transfer to transformer scale (T15, T16, Fig. 12)
 
 The largest model we tested is DistilBERT (66,955,010 parameters), fine-tuned on IMDB and updated
 additively with either more IMDB (matched null) or Rotten Tomatoes (treatment), with token-level
@@ -726,15 +748,28 @@ DistilBERT's updates were *lighter* than the tabular ones that produce 1.27–1.
 not move. Making the update tenfold gentler changed it from 0.97 to 1.09. The phenomenon is not
 being hidden by update size; it is not there.
 
-**Two candidate explanations, and we can distinguish them.** DistilBERT differs from every other
-model we tested in two ways at once: it is 62× larger *and* it begins from a pretrained checkpoint,
-where the MLPs, trees and CNN all train from scratch. At these learning rates the pretrained body
-barely moves, so attributions stay anchored to a representation that is **identical in both arms** —
-which is exactly the condition under which Δ and ρ_null must coincide. If that is the mechanism,
-the finding is not "the effect vanishes at scale" but **"a pretrained initialisation confers
-explanation stability under distribution shift"**, which is a sharper claim than the one we set out
-to test. Separating the two requires a transformer of similar size trained from scratch; that
-experiment is not in this paper, and we do not assert the pretraining explanation without it.
+**Is DistilBERT simply the far end of a curve we already have?** This is the interpretation the
+result invites, and §7.12b lets us test it rather than assert it. Fitting the optimiser share on the
+612 from-scratch runs (MLP sweep plus small ResNet) and predicting DistilBERT out of sample at its
+own agreement of 0.959 gives a predicted share of 0.843 [0.824, 0.861]. The observed share is
+**0.964**. Compared against from-scratch runs at matched agreement (0.94–0.98, n = 234), DistilBERT
+sits **above** the curve by **+0.173 [+0.104, +0.243], Welch p = 3.3 × 10⁻⁴**.
+
+So it is *not* a predicted extreme point. Something beyond update strength is operating, and by
+§7.12b it is not capacity either — the capacity slope is a precise null across 630× of parameters, so
+the from-scratch curve does not reach 0.96 no matter how far it is extrapolated in model size. (We
+report the mean prediction interval deliberately: the observation interval for a single future run
+spans [0.253, 0.988], wide enough that "inside it" would confirm nothing.)
+
+**What remains, and what we cannot separate.** DistilBERT differs from every other model here in two
+ways at once: it is 62× larger *and* it begins from a pretrained checkpoint, where the MLPs, trees
+and CNN all train from scratch. Capacity is excluded over the range we can measure, which leaves
+pretraining and architecture — and this design cannot separate those two. At these learning rates the
+pretrained body barely moves, so attributions stay anchored to a representation **identical in both
+arms**, which is exactly the condition under which Δ and ρ_null must coincide. That is a plausible
+mechanism for an excess of this sign, but a mechanism we have not tested. Separating the two requires
+a transformer of similar size trained from scratch; that experiment is not in this paper, and we do
+not assert the pretraining explanation without it.
 
 **Limits of this result.** Three seeds, one architecture, one shift pair, and per-seed IG ratios at
 the lightest update of 1.22, 1.10 and 0.95 — substantial spread. We claim *no reliable effect*, not
@@ -945,12 +980,14 @@ effect; we are reading the one the argument requires.
 3. **Shared support bounds the studiable shift.** Overlap falls to 2.8% at covariate magnitude 2.0.
    Beyond that, instance-level comparison is not defined, so this method cannot speak to severe
    shift — precisely the regime practitioners most worry about.
-4. **Scale is a bound, not a gap.** The effect is stable across a 630× parameter range within MLPs
-   (1.7k → 1.07M, §8.1) and holds for trees and a small CNN, but it is **absent on DistilBERT**
-   (1.02 [0.97, 1.09] pooled, across a tenfold range of update strength, §7.13). The empirical claim
-   therefore covers models trained from scratch up to ~1M parameters; we find no reliable effect in
-   a 66.9M-parameter pretrained transformer. Whether that is scale or pretraining is unresolved and
-   needs a same-size transformer trained from scratch.
+4. **Scale is a bound, not a gap — and not a capacity effect.** The effect is stable across a 630×
+   parameter range within MLPs (1.7k → 1.07M, §8.1) and holds for trees and a small CNN, but it is
+   **absent on DistilBERT** (1.02 [0.97, 1.09] pooled, across a tenfold range of update strength,
+   §7.13). §7.12b shows capacity does not predict the optimiser share at all (p = 0.94 over 630×),
+   and DistilBERT sits +0.173 [+0.104, +0.243] *above* the from-scratch curve at matched update size,
+   so it is not the far end of a trend we already have. What produces the excess — pretraining or
+   transformer architecture — this design cannot separate, and resolving it needs a same-size
+   transformer trained from scratch.
 5. **Three seeds on the GPU arms.** The DistilBERT and ResNet results rest on three seeds each,
    which is enough to see a null of this size but not enough to characterise its variance; per-seed
    IG ratios at the lightest update span 0.95 to 1.22.
