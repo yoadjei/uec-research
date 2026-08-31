@@ -84,10 +84,16 @@ manifest so those hashes can be verified.
   scratch (1.7k to 1.07M), and **absent** in a pretrained DistilBERT at 66.9M: 1.02 [0.97, 1.09],
   unchanged across a tenfold range of update strength. Whether that is scale or pretraining is
   unresolved.
-- **Magnitude says little about legitimacy.** Per probe point, how far an explanation moved explains
-  ~1% of the variance in how far it *should* have moved (r = +0.12 [0.08, 0.16] under concept shift,
-  −0.10 [−0.19, −0.02] under shortcut removal, 7.5k points). The per-explainer version of the same
-  comparison is underpowered at ten seeds and is not read as equivalence; LIME genuinely differs.
+- **Magnitude says little about legitimacy — on the generator.** Per probe point, how far an
+  explanation moved explains ~1% of the variance in how far it *should* have moved (r = +0.12
+  [0.08, 0.16] under concept shift, −0.10 [−0.19, −0.02] under shortcut removal, 7.5k points). The
+  per-explainer version is underpowered at ten seeds and is not read as equivalence; LIME differs.
+- **That result does not transfer, and we say so.** Repeated on real ACS covariates with a mechanism
+  known by construction, the same measurement gives r = +0.81 and 65% of the variance — the opposite
+  conclusion. Update strength, sample size, feature redundancy and pure-noise features were each
+  manipulated and none closes the gap. ω's machinery does transfer: exact to 1.1e-14 against
+  quadrature on real rows, and exactly 0 under a covariate tilt calibrated to the synthetic shift's
+  domain AUC (0.906 vs 0.902).
 - **Two published metrics get it backwards.** Reimplemented on the same checkpoints, a FASS-style
   filtered distance and Delta-Audit's spurious residual rank correct adaptation as 45% and 89%
   *worse* than unwarranted drift. UEC gives them opposite signs.
