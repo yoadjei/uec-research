@@ -46,6 +46,7 @@ STAGES = [
      "semisynthetic_metrics.parquet", 12, False),
     ("redundancy sweep", "run_redundancy.py", ["--seeds", "8"],
      "redundancy_sweep.parquet", 6, False),
+    ("adaptation sweep", "run_adaptation.py", ["--seeds", "8"], "adaptation.parquet", 45, False),
 ]
 
 BUILDERS = [("tables", "make_tables.py"), ("figures", "make_figures.py"),
