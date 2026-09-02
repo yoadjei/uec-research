@@ -120,19 +120,35 @@ def prose_words(t):
 w = prose_words(main)
 nfig = len(re.findall(r"\\begin\{figure\}", main))
 ntab = len(re.findall(r"\\begin\{table\}", main))
-est = w / 620 + nfig * 0.42 + ntab * 0.18 + 0.55
 print(f"  main-text prose words : {w}")
 print(f"  floats                : {nfig} figures, {ntab} tables")
-print(f"  ESTIMATED PAGES       : ~{est:.1f} of 9")
-check("estimated within the page limit", est <= 9.0,
-      f"~{est:.1f} pages; ESTIMATE ONLY, confirm with a real build", warn_only=est > 8.5)
+
+# Prefer the compiled document. The main text is everything before the ethics statement, since
+# the statements, the references and the appendices are all excluded from the limit.
+pages_txt = HERE / "out.txt"
+measured = None
+if (HERE / "main.pdf").exists() and pages_txt.exists():
+    pages = pages_txt.read_text(encoding="utf-8", errors="replace").split("\f")
+    for i, pg in enumerate(pages, 1):
+        if "ETHICSSTATEMENT" in re.sub(r"\s+", "", pg.upper()):
+            measured = i - 1
+            break
+
+if measured is not None:
+    print(f"  MEASURED from main.pdf: main text = pages 1-{measured} ({measured} of 9)")
+    check("main text within the page limit", measured <= 9,
+          f"{measured} pages, measured on the compiled PDF")
+else:
+    est = w / 620 + nfig * 0.42 + ntab * 0.18 + 0.55
+    print(f"  ESTIMATED PAGES       : ~{est:.1f} of 9  (no compiled PDF found)")
+    check("estimated within the page limit", est <= 9.0,
+          f"~{est:.1f} pages; ESTIMATE ONLY, run `make` to measure", warn_only=True)
 
 print()
 print("=" * 86)
 print("NOT CHECKABLE HERE")
 print("=" * 86)
 for item in [
-    "true page count: needs a LaTeX build (no TeX distribution in this environment)",
     "author quotas and reciprocal-reviewer eligibility: depends on OpenReview profiles",
     "dual-submission status: author knowledge",
     "reference accuracy for 2025-2026 entries: see docs/reference_audit.md",
