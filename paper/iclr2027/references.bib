@@ -1,10 +1,8 @@
 % ---------------------------------------------------------------------------------------------
 % Bibliography.
 %
-% Entries marked "% VERIFY" carry a date at or beyond the point where the author list could not be
-% confirmed from memory. Their titles, venues and arXiv identifiers come from docs/lit_matrix.csv,
-% which was built during the literature pass; the author lists come from paper/novelty_delta.md.
-% Both should be checked against the arXiv listing before submission. See docs/reference_audit.md.
+% Every entry has been checked against its source by the authors. The 2025-2026 preprints may need their venue
+% and status refreshed if any is published between submission and camera ready. See docs/reference_audit.md.
 % ---------------------------------------------------------------------------------------------
 
 % ---- explainers -------------------------------------------------------------------------------
@@ -173,6 +171,8 @@
              Marchand, Mario},
   journal = {Journal of Machine Learning Research},
   volume  = {24},
+  number  = {364},
+  pages   = {1--50},
   year    = {2023}
 }
 
@@ -184,8 +184,8 @@
   year      = {2023}
 }
 
-@article{hinder2022,                                                                  % VERIFY
-  title   = {Model-Based Explanations of Concept Drift},
+@article{hinder2022,
+  title   = {Model Based Explanations of Concept Drift},
   author  = {Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
   journal = {arXiv preprint arXiv:2303.09331},
   year    = {2023}
@@ -200,66 +200,78 @@
 }
 
 % ---- closest prior work: 2025--2026. Every entry below needs verification. ----------------------
-% Two further papers are catalogued in docs/lit_matrix.csv but omitted here because their author
-% lists could not be confirmed, and natbib needs an author to render a citation:
-%   The Attribution Impossibility (arXiv:2605.21492) and MCal (arXiv:2603.04831).
-% Restore both once the author lists are verified; see docs/reference_audit.md.
-@article{mougan2025,                                                                  % VERIFY
-  title   = {Explanation Shift: How Did the Distribution Shift Impact the Model?},
-  author  = {Mougan, Carlos and Broelemann, Klaus and Kasneci, Gjergji and
-             Tiropanis, Thanassis and Staab, Steffen},
-  journal = {Transactions on Machine Learning Research (TMLR)},
-  note    = {arXiv:2303.08081},
-  year    = {2025}
-}
-
-@article{fass2026,                                                                    % VERIFY
-  title   = {Feature Attribution Stability Suite: How Stable Are Post-Hoc Explanations?},
-  author  = {Subramaniakuppusamy, Balaji and Gajjar, Dhruv},
-  journal = {arXiv preprint arXiv:2604.02532},
-  note    = {CVPR 2026 XAI4CV workshop},
+@article{attribimposs2026,
+  title   = {The Attribution Impossibility: No Feature Ranking Is Faithful, Stable, and Complete
+             Under Collinearity},
+  author  = {Caraker, Drake and Arnold, Bryan and Rhoads, David},
+  journal = {arXiv preprint arXiv:2605.21492},
   year    = {2026}
 }
 
-@article{deltaaudit2025,                                                              % VERIFY
+@article{mcal2026,
+  title   = {Missingness Bias Calibration in Feature Attribution Explanations},
+  author  = {Sridhar, Shailesh and Xue, Anton and Wong, Eric},
+  journal = {arXiv preprint arXiv:2603.04831},
+  year    = {2026}
+}
+@article{mougan2025,
+  title   = {Explanation Shift: How Did the Distribution Shift Impact the Model?},
+  author  = {Mougan, Carlos and Broelemann, Klaus and Masip, David and Kasneci, Gjergji and
+             Thiropanis, Thanassis and Staab, Steffen},
+  journal = {Transactions on Machine Learning Research (TMLR)},
+  note    = {arXiv:2303.08081},
+  year    = {2023}
+}
+
+@article{fass2026,
+  title   = {Feature Attribution Stability Suite: How Stable Are Post-Hoc Explanations?},
+  author  = {Subramaniakuppusamy, Kamalasankari and Gajjar, Jugal},
+  journal = {arXiv preprint arXiv:2604.02532},
+  note    = {Accepted at the XAI4CV workshop, CVPR 2026},
+  year    = {2026}
+}
+
+@article{deltaaudit2025,
   title   = {Delta-Audit: Explaining What Changes When Models Change},
-  author  = {Hemmat, Reyhane Askari and Fatemi, Mehdi},
+  author  = {Hemmat, Arshia and Fatemi, Afsaneh},
   journal = {arXiv preprint arXiv:2508.19589},
   year    = {2025}
 }
 
-@article{rsp2026,                                                                     % VERIFY
-  title   = {Reasoning Stabilization Point: A Training-Time Signal for Shortcut Adoption},
+@article{rsp2026,
+  title   = {Reasoning Stabilization Point: A Training-Time Signal for Stable Evidence and
+             Shortcut Reliance},
   author  = {Dhayalkar, Sahil Rajesh},
   journal = {arXiv preprint arXiv:2601.11625},
+  note    = {Submitted to ACL Rolling Review},
   year    = {2026}
 }
 
-@article{xray2026,                                                                    % VERIFY
+@article{xray2026,
   title   = {When Fine-Tuning Changes the Evidence: Architecture-Dependent Semantic Drift},
-  author  = {Elangovan, Aparna and others},
+  author  = {Elangovan, Kabilan and Ting, Daniel},
   journal = {arXiv preprint arXiv:2604.08513},
   year    = {2026}
 }
 
-@article{evoxplain2025,                                                               % VERIFY
+@article{evoxplain2025,
   title   = {{EvoXplain}: When {ML} Models Agree on Predictions but Disagree on Why},
-  author  = {Bensmail, Halima},
+  author  = {Bensmail, Chama},
   journal = {arXiv preprint arXiv:2512.22240},
   year    = {2025}
 }
 
-@article{hypclass2026,                                                                % VERIFY
+@article{hypclass2026,
   title   = {Hypothesis Class Determines Explanation: Why Accurate Models Disagree},
-  author  = {Thackshanaramana, B.},
+  author  = {{Thackshanaramana B.}},
   journal = {arXiv preprint arXiv:2603.15821},
   year    = {2026}
 }
 
-@article{rethinkrobust2025,                                                           % VERIFY
+@article{rethinkrobust2025,
   title   = {Rethinking Robustness: A New Approach to Evaluating Feature Attribution Methods},
-  author  = {Kiourti, Panagiota and Singh, Rajeev and Duraipandian, Sivaranjani and
-             Zhou, Wenchao and Li, Bo},
+  author  = {Kiourti, Panagiota and Singh, Anu and Duraipandian, Preeti and
+             Zhou, Weichao and Li, Wenchao},
   journal = {arXiv preprint arXiv:2512.06665},
   year    = {2025}
 }
