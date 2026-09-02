@@ -1,0 +1,8 @@
+# LaTeX build intermediates. main.pdf is committed as the deliverable.
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+out.txt
+*.png
