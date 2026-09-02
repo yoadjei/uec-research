@@ -106,7 +106,7 @@ of where it stops holding (\S\ref{sec:results}).
 distribution shift; that is the contribution of \citet{mougan2025}, whose frozen-model setting is not
 ours. We were not first to condition on prediction preservation; \citet{fass2026} were, and we adopt
 their conditioning. We avoid the phrase ``explanation drift'', which denotes at least three distinct
-objects in the 2025--2026 literature (Appendix~\ref{app:terms}).
+objects in the recent literature (Appendix~\ref{app:terms}).
 
 \section{Setup and related work}
 
@@ -136,7 +136,9 @@ feature that was predictive but never causal.
 \caption{Related work organised by what changes. The last row is closest to this paper.}
 \label{tab:related}
 \centering\small
-\begin{tabular}{@{}lll@{}}
+% Fixed-width wrapped columns: with plain l columns the citation column runs 97pt past the text
+% block and into the margin.
+\begin{tabular}{@{}p{0.17\textwidth}p{0.42\textwidth}p{0.35\textwidth}@{}}
 \toprule
 \textbf{What changes} & \textbf{Work} & \textbf{What is missing} \\
 \midrule
@@ -223,9 +225,9 @@ than assume it (\S\ref{sec:theory-check}).
 
 \paragraph{Corollary.} Under a prediction-preserving update, IG's aggregate attribution mass is
 bounded, gradient$\times$input's is not, and Shapley's is bounded only if the coalition premise
-holds. Collinearity constrains the allocation further, since attribution mass can move between
-near-duplicate features without changing the function; our redundant-feature block is built to
-exercise that case. No class is protected in its \emph{allocation} across features, which is the part a
+holds. Collinearity constrains the allocation further, since no ranking can be simultaneously
+faithful, stable and complete when features are collinear \citep{attribimposs2026}; our
+redundant-feature block is built to exercise that case. No class is protected in its \emph{allocation} across features, which is the part a
 practitioner reads. The sharpness construction is not exotic in kind: it is a difference that
 oscillates transverse to the integration path while vanishing on it, which is to say two checkpoints
 that agree on the data manifold and curve differently off it. This is the mechanism
@@ -246,7 +248,7 @@ generator we use ACS Income \citep{ding2021folktables}, CIFAR-10 with common cor
 \citep{sanh2019distilbert,maas2011imdb}. Tests are paired across seeds with Holm correction
 \citep{holm1979} and Cliff's $\delta$ \citep{cliff1993}. Our reading of what an attribution
 evaluation must control for follows recent critiques of the evaluation protocols themselves
-\citep{rethinkrobust2025}. Figures are drawn to be legible under the common colour-vision
+\citep{rethinkrobust2025,mcal2026}. Figures are drawn to be legible under the common colour-vision
 deficiencies and in monochrome (Appendix~\ref{app:figures}).
 
 \section{Results}
@@ -496,7 +498,7 @@ code and re-derived by the verification script described above.
 \section{Terminology: what ``explanation drift'' denotes}
 \label{app:terms}
 
-The phrase names at least three distinct objects in the 2025--2026 literature, which is why we avoid
+The phrase names at least three distinct objects in work from 2023 onwards, which is why we avoid
 it. \citet{mougan2025} use \emph{explanation shift} for a divergence between $P(E_f(X_S))$ and
 $P(E_f(X_T))$ for a frozen model, a population-level object. \citet{rsp2026} uses \emph{explanation
 drift} for the epoch-to-epoch change of attributions on a fixed probe set within a single training
