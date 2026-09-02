@@ -13,15 +13,20 @@ though page and volume numbers still merit a glance.
 
 ---
 
-## Priority 1: cannot be confirmed, author list uncertain or absent
+## Priority 1: removed from the submission, restore once verified
 
-These two carry an explicit placeholder in the `.bib` and **will not compile into a usable citation
-until filled in**.
+Two papers are catalogued in `lit_matrix.csv` but are **not cited in the current draft**, because
+their author lists could not be supplied and `natbib` builds a citation from the author field: an
+entry without one renders a broken citation and prints the placeholder into the reference list.
 
-| key | arXiv | what to supply |
-|---|---|---|
-| `attribimposs2026` | 2605.21492 | full author list; confirm title and that it is May 2026 |
-| `mcal2026` | 2603.04831 | full author list; confirm title and month |
+| key | arXiv | what to supply | where it belonged |
+|---|---|---|---|
+| `attribimposs2026` | 2605.21492 | full author list, title, month | theory corollary, on collinearity |
+| `mcal2026` | 2603.04831 | full author list, title, month | protocol, with `rethinkrobust2025` |
+
+Supply the author lists and both can be restored; the sentences currently make their points without
+the citation, so nothing is misattributed in the meantime. `paper/iclr2027/check_submission.py`
+fails if a placeholder author ever reaches the bibliography.
 
 ## Priority 2: author list taken from our own earlier notes, never re-checked
 
