@@ -1,85 +1,71 @@
-# Reference audit: what needs human verification before submission
+# Reference audit
 
-The bibliography is `paper/iclr2027/references.bib` (43 entries, all cited, no dangling keys).
+**Status: closed.** Every entry in `paper/iclr2027/references.bib` (43 entries, all cited, no
+dangling keys) has been checked against its source by the authors. The document compiles with
+BibTeX reporting no errors and LaTeX reporting no undefined citations or references.
 
-The assistant that drafted this paper has a knowledge cutoff of **May 2026**. Every entry dated
-2025 or 2026 sits at or beyond that boundary. Those entries were compiled during the literature
-pass from `docs/lit_matrix.csv` (titles, venues, arXiv identifiers) and `paper/novelty_delta.md`
-(author lists), both built earlier in the project, but they cannot be re-confirmed from memory now.
-They are listed below in priority order.
-
-Older, widely cited work is listed separately at the end; those entries are standard and low-risk,
-though page and volume numbers still merit a glance.
+This file records what was corrected, so the corrections are not silently lost if the bibliography
+is ever regenerated.
 
 ---
 
-## Priority 1: removed from the submission, restore once verified
+## Corrections applied after verification
 
-Two papers are catalogued in `lit_matrix.csv` but are **not cited in the current draft**, because
-their author lists could not be supplied and `natbib` builds a citation from the author field: an
-entry without one renders a broken citation and prints the placeholder into the reference list.
+| key | what was wrong | corrected to |
+|---|---|---|
+| `mougan2025` | year given as 2025; David Masip missing from the author list | TMLR **2023**; Mougan, Broelemann, Masip, Kasneci, Thiropanis, Staab |
+| `fass2026` | first names wrong on both authors | Kamalasankari Subramaniakuppusamy, Jugal Gajjar; accepted at XAI4CV, CVPR 2026 |
+| `rsp2026` | title truncated | "…A Training-Time Signal for **Stable Evidence and Shortcut Reliance**"; submitted to ACL Rolling Review |
+| `xray2026` | author list was `Elangovan, Aparna and others` | Kabilan Elangovan and Daniel Ting |
+| `evoxplain2025` | first name wrong | Chama Bensmail (sole author) |
+| `hypclass2026` | name split into surname and initial | `{{Thackshanaramana B.}}` as a single unit |
+| `rethinkrobust2025` | three first names and one surname wrong | Panagiota Kiourti, Anu Singh, Preeti Duraipandian, Weichao Zhou, Wenchao Li |
+| `deltaaudit2025` | both first names wrong | Arshia Hemmat, Afsaneh Fatemi |
+| `hinder2022` | hyphen in the title | "Model based Explanations of Concept Drift" |
+| `laberge2023` | no article or page numbers | JMLR 24, article 364, pages 1–50 |
+| `attribimposs2026` | removed for want of an author list | Drake Caraker, Bryan Arnold, David Rhoads; **restored and cited** |
+| `mcal2026` | removed for want of an author list | Shailesh Sridhar, Anton Xue, Eric Wong; **restored and cited** |
 
-| key | arXiv | what to supply | where it belonged |
-|---|---|---|---|
-| `attribimposs2026` | 2605.21492 | full author list, title, month | theory corollary, on collinearity |
-| `mcal2026` | 2603.04831 | full author list, title, month | protocol, with `rethinkrobust2025` |
+`agarwal2022ros` was checked and the recorded seven-author list is correct. `damour2020` keeps its
+key while carrying the official JMLR 2022 metadata, which is standard practice.
 
-Supply the author lists and both can be restored; the sentences currently make their points without
-the citation, so nothing is misattributed in the meantime. `paper/iclr2027/check_submission.py`
-fails if a placeholder author ever reaches the bibliography.
+### Knock-on edit
 
-## Priority 2: author list taken from our own earlier notes, never re-checked
+Moving `mougan2025` to 2023 made the phrase "the 2025--2026 literature" wrong, since the three
+senses of "explanation drift" now span 2023 to 2026. Both occurrences were reworded.
 
-Confirm the **author list, exact title, year and venue** against the arXiv abstract page. Several
-of these were recorded from a single pass and one is known to have been wrong once already: the
-audit that seeded this project misattributed the ROS author list to the OpenXAI author set, and
-listed Delta-Audit as single-author when it has two.
+### A bug the compile caught
 
-| key | arXiv | author list as recorded | also confirm |
-|---|---|---|---|
-| `fass2026` | 2604.02532 | Subramaniakuppusamy & Gajjar | that it is the CVPR 2026 XAI4CV workshop |
-| `rsp2026` | 2601.11625 | Dhayalkar | title wording; venue status (ACL ARR) |
-| `xray2026` | 2604.08513 | Elangovan et al. | the full list; `et al.` is a placeholder |
-| `evoxplain2025` | 2512.22240 | Bensmail | whether there are co-authors |
-| `hypclass2026` | 2603.15821 | Thackshanaramana, B. | name form and initials |
-| `rethinkrobust2025` | 2512.06665 | Kiourti, Singh, Duraipandian, Zhou & Li | order and spelling |
-| `deltaaudit2025` | 2508.19589 | Hemmat & Fatemi | first names; this one was corrected once |
-| `mougan2025` | 2303.08081 | Mougan, Broelemann, Kasneci, Tiropanis & Staab | that the TMLR year is 2025, not 2023 |
-| `agarwal2022ros` | 2203.06877 | Agarwal, Johnson, Pawelczyk, Krishna, Saxena, Zitnik & Lakkaraju | this list was wrong once; check carefully |
-
-## Priority 3: cited in the bib but not in the paper's argument
-
-`hinder2022` was first entered under a guessed title and has been corrected to match
-`lit_matrix.csv` ("Model-Based Explanations of Concept Drift", arXiv 2303.09331). The corrected
-title is still from our own notes and not re-confirmed; check it, since the Hinder/Vaquet/Hammer
-group has several closely related papers and the exact one matters for the Section 2 sentence.
-
-## Priority 4: standard works, low risk, worth a glance at volume and pages
-
-`sundararajan2017`, `lundberg2017`, `lundberg2020tree`, `ribeiro2016`, `smilkov2017`,
-`simonyan2013`, `erion2021`, `alvarez2018`, `yeh2019`, `bhatt2020`, `openxai2022`, `quantus2023`,
-`krishna2022`, `ghorbani2019`, `dombrowski2019`, `slack2020`, `laberge2023`, `kulinski2023`,
-`jain2019`, `ding2021folktables`, `chen2016xgboost`, `sanh2019distilbert`, `maas2011imdb`,
-`kokhlikyan2020captum`, `krizhevsky2009cifar`, `hendrycks2019benchmarking`, `cliff1993`,
-`holm1979`, `schuirmann1987`, `okabe2008`.
-
-Two specific items in this group to check rather than assume:
-
-- **`damour2020`** is entered with journal year 2022 (JMLR 23(226)) while the key says 2020, which
-  is the arXiv year. Both are defensible; make the key and the year agree, or leave the key and
-  keep the JMLR year.
-- **`laberge2023`** has a JMLR volume but no page or article number.
+Every 2025--2026 entry carried a trailing `% VERIFY` marker on its `@article{key,` line. **`%` is
+not a comment character inside a BibTeX entry**, so the markers were parsed as field data and
+BibTeX failed with 8 errors, silently emptying the author, title, journal and year of the affected
+entries. All eight were removed. This is the reason a bibliography has to be built and not merely
+written.
 
 ---
 
-## Other pre-submission items that are not references
+## Verified by compilation
 
-1. **No LaTeX toolchain was available**, so `main.tex` has never been compiled. Page count is
-   estimated at **~8.4 of 9 pages** by word and float counting, which is close enough to the limit
-   that it must be checked on a real build before submission.
-2. **Anonymity.** The paper contains no author names and no repository URL. The public repository
-   for this project would de-anonymise it, so the reproducibility statement points to anonymised
-   supplementary material instead. Do not paste the repository link into the submission.
-3. **Appendix A is referenced from the introduction** and now exists; the cross-reference resolves.
-4. The **AI use statement** is included and, per the ICLR guidelines, does not count toward the
-   page limit.
+Built with MiKTeX 25.12 (`make` in `paper/iclr2027/`):
+
+- **Main text: 8 of the 9 pages allowed**, measured on the compiled PDF as everything preceding the
+  ethics statement. References (pages 9–11) and appendices (page 12) are excluded from the limit
+  under the ICLR rules. Twelve pages in total.
+- BibTeX: no errors. LaTeX: no undefined citations, no undefined references.
+- Overfull boxes: **0**. The related-work table originally ran 97pt past the text block and into the
+  margin; it now uses wrapped fixed-width columns.
+- No style file, margin or spacing was altered to gain space. The page count comes from the content.
+
+`paper/iclr2027/check_submission.py` re-runs the full guideline check and takes the page count from
+the compiled PDF whenever one is present.
+
+---
+
+## Remaining items, none of them references
+
+1. **Author quotas and reciprocal-reviewer eligibility** depend on OpenReview profiles and cannot be
+   checked from the repository. At least one author must be registered to review three papers.
+2. **Supplementary code must be anonymised before upload.** The repository as it stands identifies
+   the authors. The paper itself carries no repository URL, by design.
+3. **Dual-submission status** is author knowledge.
+4. If any 2025–2026 preprint is published between submission and camera ready, refresh its venue.
