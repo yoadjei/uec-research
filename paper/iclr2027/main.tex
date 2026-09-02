@@ -18,7 +18,13 @@
 \title{The Control Decides the Answer: \\ A Matched-Operator Null for Explanation Change
 Under Model Updates}
 
-\author{Anonymous authors\\Paper under double-blind review}
+% Authors must not appear in the submitted version. The style file prints
+% "Anonymous authors / Paper under double-blind review" for as long as \iclrfinalcopy stays
+% commented out, so this block is ignored during review and is filled in for the camera ready.
+\author{Anonymous authors \\
+Paper under double-blind review}
+
+%\iclrfinalcopy % Uncomment for the camera-ready version, but NOT for submission.
 
 \begin{document}
 \maketitle
@@ -217,9 +223,9 @@ than assume it (\S\ref{sec:theory-check}).
 
 \paragraph{Corollary.} Under a prediction-preserving update, IG's aggregate attribution mass is
 bounded, gradient$\times$input's is not, and Shapley's is bounded only if the coalition premise
-holds. The allocation is further constrained by collinearity, under which no ranking can be
-simultaneously faithful, stable and complete \citep{attribimposs2026}; our redundant-feature block
-is where that tension bites. No class is protected in its \emph{allocation} across features, which is the part a
+holds. Collinearity constrains the allocation further, since attribution mass can move between
+near-duplicate features without changing the function; our redundant-feature block is built to
+exercise that case. No class is protected in its \emph{allocation} across features, which is the part a
 practitioner reads. The sharpness construction is not exotic in kind: it is a difference that
 oscillates transverse to the integration path while vanishing on it, which is to say two checkpoints
 that agree on the data manifold and curve differently off it. This is the mechanism
@@ -240,7 +246,7 @@ generator we use ACS Income \citep{ding2021folktables}, CIFAR-10 with common cor
 \citep{sanh2019distilbert,maas2011imdb}. Tests are paired across seeds with Holm correction
 \citep{holm1979} and Cliff's $\delta$ \citep{cliff1993}. Our reading of what an attribution
 evaluation must control for follows recent critiques of the evaluation protocols themselves
-\citep{rethinkrobust2025,mcal2026}. Figures are drawn to be legible under the common colour-vision
+\citep{rethinkrobust2025}. Figures are drawn to be legible under the common colour-vision
 deficiencies and in monochrome (Appendix~\ref{app:figures}).
 
 \section{Results}
@@ -451,6 +457,18 @@ how far explanations should have moved makes the remaining question askable, and
 conditionally: magnitude indicates legitimacy when an update completes the adaptation it implies, and
 carries little information under the light updates that deployment uses.
 
+\subsubsection*{Ethics statement}
+
+This work uses only public datasets and involves no human subjects, no personally identifying
+information and no new data collection. ACS Income \citep{ding2021folktables} is derived from public
+census microdata and carries demographic attributes including sex and race, which our models consume
+as features because the published prediction task does. We make no fairness claim and use the data
+solely to test whether a measurement design transfers from a generator to real covariates; the
+attribution changes we report should not be read as evidence about any group. The paper is
+diagnostic in aim, and the plausible misuse we can foresee is that a practitioner reads unwarranted
+attribution change as a fairness finding, which \S\ref{sec:h2} argues directly against. The authors
+have read the ICLR Code of Ethics and adhere to it.
+
 \subsubsection*{Reproducibility statement}
 
 Every quantitative claim is regenerated from the released code. A single entry point runs all
@@ -469,6 +487,9 @@ the choice of reference and controls, the propositions and their proofs, and eve
 paper were made and checked by the authors. Every number reported here is produced by the released
 code and re-derived by the verification script described above.
 
+
+\bibliographystyle{iclr2027_conference}
+\bibliography{references}
 
 \appendix
 
@@ -515,8 +536,5 @@ hatch for bars and in marker shape for lines, so that they survive monochrome pr
 common colour-vision deficiencies. We simulated deuteranopia, protanopia and tritanopia by cone
 collapse and checked pairwise separation for the colours that share each panel; where separation on
 colour alone falls below threshold, the redundant encoding carries the distinction.
-
-\bibliography{references}
-\bibliographystyle{iclr2027_conference}
 
 \end{document}
