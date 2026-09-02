@@ -1,0 +1,368 @@
+% ---------------------------------------------------------------------------------------------
+% Bibliography.
+%
+% Entries marked "% VERIFY" carry a date at or beyond the point where the author list could not be
+% confirmed from memory. Their titles, venues and arXiv identifiers come from docs/lit_matrix.csv,
+% which was built during the literature pass; the author lists come from paper/novelty_delta.md.
+% Both should be checked against the arXiv listing before submission. See docs/reference_audit.md.
+% ---------------------------------------------------------------------------------------------
+
+% ---- explainers -------------------------------------------------------------------------------
+@inproceedings{sundararajan2017,
+  title     = {Axiomatic Attribution for Deep Networks},
+  author    = {Sundararajan, Mukund and Taly, Ankur and Yan, Qiqi},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2017}
+}
+
+@inproceedings{lundberg2017,
+  title     = {A Unified Approach to Interpreting Model Predictions},
+  author    = {Lundberg, Scott M. and Lee, Su-In},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2017}
+}
+
+@article{lundberg2020tree,
+  title   = {From Local Explanations to Global Understanding with Explainable {AI} for Trees},
+  author  = {Lundberg, Scott M. and Erion, Gabriel and Chen, Hugh and DeGrave, Alex and
+             Prutkin, Jordan M. and Nair, Bala and Katz, Ronit and Himmelfarb, Jonathan and
+             Bansal, Nisha and Lee, Su-In},
+  journal = {Nature Machine Intelligence},
+  volume  = {2},
+  number  = {1},
+  pages   = {56--67},
+  year    = {2020}
+}
+
+@inproceedings{ribeiro2016,
+  title     = {``Why Should {I} Trust You?'': Explaining the Predictions of Any Classifier},
+  author    = {Ribeiro, Marco Tulio and Singh, Sameer and Guestrin, Carlos},
+  booktitle = {ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  year      = {2016}
+}
+
+@article{smilkov2017,
+  title   = {{SmoothGrad}: Removing Noise by Adding Noise},
+  author  = {Smilkov, Daniel and Thorat, Nikhil and Kim, Been and Vi{\'e}gas, Fernanda and
+             Wattenberg, Martin},
+  journal = {arXiv preprint arXiv:1706.03825},
+  year    = {2017}
+}
+
+@article{simonyan2013,
+  title   = {Deep Inside Convolutional Networks: Visualising Image Classification Models and
+             Saliency Maps},
+  author  = {Simonyan, Karen and Vedaldi, Andrea and Zisserman, Andrew},
+  journal = {arXiv preprint arXiv:1312.6034},
+  year    = {2013}
+}
+
+@article{erion2021,
+  title   = {Improving Performance of Deep Learning Models with Axiomatic Attribution Priors and
+             Expected Gradients},
+  author  = {Erion, Gabriel and Janizek, Joseph D. and Sturmfels, Pascal and Lundberg, Scott M.
+             and Lee, Su-In},
+  journal = {Nature Machine Intelligence},
+  volume  = {3},
+  number  = {7},
+  pages   = {620--631},
+  year    = {2021}
+}
+
+% ---- stability, robustness, evaluation ---------------------------------------------------------
+@article{alvarez2018,
+  title   = {On the Robustness of Interpretability Methods},
+  author  = {Alvarez-Melis, David and Jaakkola, Tommi S.},
+  journal = {arXiv preprint arXiv:1806.08049},
+  year    = {2018}
+}
+
+@inproceedings{yeh2019,
+  title     = {On the {(In)}fidelity and Sensitivity of Explanations},
+  author    = {Yeh, Chih-Kuan and Hsieh, Cheng-Yu and Suggala, Arun and Inouye, David I. and
+               Ravikumar, Pradeep},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2019}
+}
+
+@inproceedings{bhatt2020,
+  title     = {Evaluating and Aggregating Feature-based Model Explanations},
+  author    = {Bhatt, Umang and Weller, Adrian and Moura, Jos{\'e} M. F.},
+  booktitle = {International Joint Conference on Artificial Intelligence (IJCAI)},
+  year      = {2020}
+}
+
+@article{agarwal2022ros,
+  title   = {Rethinking Stability for Attribution-based Explanations},
+  author  = {Agarwal, Chirag and Johnson, Nari and Pawelczyk, Martin and Krishna, Satyapriya and
+             Saxena, Eshika and Zitnik, Marinka and Lakkaraju, Himabindu},
+  journal = {arXiv preprint arXiv:2203.06877},
+  note    = {ICLR 2022 PAIR\textsuperscript{2}Struct workshop},
+  year    = {2022}
+}
+
+@inproceedings{openxai2022,
+  title     = {{OpenXAI}: Towards a Transparent Evaluation of Model Explanations},
+  author    = {Agarwal, Chirag and Krishna, Satyapriya and Saxena, Eshika and Pawelczyk, Martin and
+               Johnson, Nari and Puri, Isha and Zitnik, Marinka and Lakkaraju, Himabindu},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS) Datasets and Benchmarks},
+  year      = {2022}
+}
+
+@article{quantus2023,
+  title   = {Quantus: An Explainable {AI} Toolkit for Responsible Evaluation of Neural Network
+             Explanations and Beyond},
+  author  = {Hedstr{\"o}m, Anna and Weber, Leander and Krakowczyk, Daniel and Bareeva, Dilyara and
+             Motzkus, Franz and Samek, Wojciech and Lapuschkin, Sebastian and H{\"o}hne,
+             Marina M.-C.},
+  journal = {Journal of Machine Learning Research},
+  volume  = {24},
+  number  = {34},
+  pages   = {1--11},
+  year    = {2023}
+}
+
+@article{krishna2022,
+  title   = {The Disagreement Problem in Explainable Machine Learning: A Practitioner's Perspective},
+  author  = {Krishna, Satyapriya and Han, Tessa and Gu, Alex and Pombra, Javin and Jabbari, Shahin
+             and Wu, Steven and Lakkaraju, Himabindu},
+  journal = {arXiv preprint arXiv:2202.01602},
+  year    = {2022}
+}
+
+% ---- adversarial fragility ---------------------------------------------------------------------
+@inproceedings{ghorbani2019,
+  title     = {Interpretation of Neural Networks Is Fragile},
+  author    = {Ghorbani, Amirata and Abid, Abubakar and Zou, James},
+  booktitle = {AAAI Conference on Artificial Intelligence},
+  year      = {2019}
+}
+
+@inproceedings{dombrowski2019,
+  title     = {Explanations Can Be Manipulated and Geometry Is to Blame},
+  author    = {Dombrowski, Ann-Kathrin and Alber, Maximilian and Anders, Christopher J. and
+               Ackermann, Marcel and M{\"u}ller, Klaus-Robert and Kessel, Pan},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2019}
+}
+
+@inproceedings{slack2020,
+  title     = {Fooling {LIME} and {SHAP}: Adversarial Attacks on Post Hoc Explanation Methods},
+  author    = {Slack, Dylan and Hilgard, Sophie and Jia, Emily and Singh, Sameer and
+               Lakkaraju, Himabindu},
+  booktitle = {AAAI/ACM Conference on AI, Ethics, and Society (AIES)},
+  year      = {2020}
+}
+
+% ---- underspecification / multiplicity ---------------------------------------------------------
+@article{damour2020,
+  title   = {Underspecification Presents Challenges for Credibility in Modern Machine Learning},
+  author  = {D'Amour, Alexander and Heller, Katherine and Moldovan, Dan and Adlam, Ben and
+             Alipanahi, Babak and Beutel, Alex and Chen, Christina and Deaton, Jonathan and
+             Eisenstein, Jacob and Hoffman, Matthew D. and others},
+  journal = {Journal of Machine Learning Research},
+  volume  = {23},
+  number  = {226},
+  pages   = {1--61},
+  year    = {2022}
+}
+
+@article{laberge2023,
+  title   = {Partial Order in Chaos: Consensus on Feature Attributions in the {R}ashomon Set},
+  author  = {Laberge, Gabriel and Pequignot, Yann and Mathieu, Alexandre and Khomh, Foutse and
+             Marchand, Mario},
+  journal = {Journal of Machine Learning Research},
+  volume  = {24},
+  year    = {2023}
+}
+
+% ---- explaining the shift itself ---------------------------------------------------------------
+@inproceedings{kulinski2023,
+  title     = {Towards Explaining Distribution Shifts},
+  author    = {Kulinski, Sean and Inouye, David I.},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023}
+}
+
+@article{hinder2022,                                                                  % VERIFY
+  title   = {Model-Based Explanations of Concept Drift},
+  author  = {Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
+  journal = {arXiv preprint arXiv:2303.09331},
+  year    = {2023}
+}
+
+@inproceedings{jain2019,
+  title     = {Attention Is Not Explanation},
+  author    = {Jain, Sarthak and Wallace, Byron C.},
+  booktitle = {Conference of the North American Chapter of the Association for Computational
+               Linguistics (NAACL)},
+  year      = {2019}
+}
+
+% ---- closest prior work: 2025--2026. Every entry below needs verification. ----------------------
+@article{mougan2025,                                                                  % VERIFY
+  title   = {Explanation Shift: How Did the Distribution Shift Impact the Model?},
+  author  = {Mougan, Carlos and Broelemann, Klaus and Kasneci, Gjergji and
+             Tiropanis, Thanassis and Staab, Steffen},
+  journal = {Transactions on Machine Learning Research (TMLR)},
+  note    = {arXiv:2303.08081},
+  year    = {2025}
+}
+
+@article{fass2026,                                                                    % VERIFY
+  title   = {Feature Attribution Stability Suite: How Stable Are Post-Hoc Explanations?},
+  author  = {Subramaniakuppusamy, Balaji and Gajjar, Dhruv},
+  journal = {arXiv preprint arXiv:2604.02532},
+  note    = {CVPR 2026 XAI4CV workshop},
+  year    = {2026}
+}
+
+@article{deltaaudit2025,                                                              % VERIFY
+  title   = {Delta-Audit: Explaining What Changes When Models Change},
+  author  = {Hemmat, Reyhane Askari and Fatemi, Mehdi},
+  journal = {arXiv preprint arXiv:2508.19589},
+  year    = {2025}
+}
+
+@article{rsp2026,                                                                     % VERIFY
+  title   = {Reasoning Stabilization Point: A Training-Time Signal for Shortcut Adoption},
+  author  = {Dhayalkar, Sahil Rajesh},
+  journal = {arXiv preprint arXiv:2601.11625},
+  year    = {2026}
+}
+
+@article{xray2026,                                                                    % VERIFY
+  title   = {When Fine-Tuning Changes the Evidence: Architecture-Dependent Semantic Drift},
+  author  = {Elangovan, Aparna and others},
+  journal = {arXiv preprint arXiv:2604.08513},
+  year    = {2026}
+}
+
+@article{evoxplain2025,                                                               % VERIFY
+  title   = {{EvoXplain}: When {ML} Models Agree on Predictions but Disagree on Why},
+  author  = {Bensmail, Halima},
+  journal = {arXiv preprint arXiv:2512.22240},
+  year    = {2025}
+}
+
+@article{hypclass2026,                                                                % VERIFY
+  title   = {Hypothesis Class Determines Explanation: Why Accurate Models Disagree},
+  author  = {Thackshanaramana, B.},
+  journal = {arXiv preprint arXiv:2603.15821},
+  year    = {2026}
+}
+
+@article{rethinkrobust2025,                                                           % VERIFY
+  title   = {Rethinking Robustness: A New Approach to Evaluating Feature Attribution Methods},
+  author  = {Kiourti, Panagiota and Singh, Rajeev and Duraipandian, Sivaranjani and
+             Zhou, Wenchao and Li, Bo},
+  journal = {arXiv preprint arXiv:2512.06665},
+  year    = {2025}
+}
+
+@article{attribimposs2026,                                                            % VERIFY
+  title   = {The Attribution Impossibility: No Feature Ranking Is Faithful, Stable and Complete
+             Under Collinearity},
+  author  = {{Author list to be verified}},
+  journal = {arXiv preprint arXiv:2605.21492},
+  year    = {2026}
+}
+
+@article{mcal2026,                                                                    % VERIFY
+  title   = {Missingness Bias Calibration in Feature Attribution Explanations},
+  author  = {{Author list to be verified}},
+  journal = {arXiv preprint arXiv:2603.04831},
+  year    = {2026}
+}
+
+% ---- data, models, tooling ---------------------------------------------------------------------
+@inproceedings{ding2021folktables,
+  title     = {Retiring {Adult}: New Datasets for Fair Machine Learning},
+  author    = {Ding, Frances and Hardt, Moritz and Miller, John and Schmidt, Ludwig},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021}
+}
+
+@inproceedings{chen2016xgboost,
+  title     = {{XGBoost}: A Scalable Tree Boosting System},
+  author    = {Chen, Tianqi and Guestrin, Carlos},
+  booktitle = {ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  year      = {2016}
+}
+
+@article{sanh2019distilbert,
+  title   = {{DistilBERT}, a Distilled Version of {BERT}: Smaller, Faster, Cheaper and Lighter},
+  author  = {Sanh, Victor and Debut, Lysandre and Chaumond, Julien and Wolf, Thomas},
+  journal = {arXiv preprint arXiv:1910.01108},
+  year    = {2019}
+}
+
+@inproceedings{maas2011imdb,
+  title     = {Learning Word Vectors for Sentiment Analysis},
+  author    = {Maas, Andrew L. and Daly, Raymond E. and Pham, Peter T. and Huang, Dan and
+               Ng, Andrew Y. and Potts, Christopher},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2011}
+}
+
+@article{kokhlikyan2020captum,
+  title   = {Captum: A Unified and Generic Model Interpretability Library for {PyTorch}},
+  author  = {Kokhlikyan, Narine and Miglani, Vivek and Martin, Miguel and Wang, Edward and
+             Alsallakh, Bilal and Reynolds, Jonathan and Melnikov, Alexander and Kliushkina,
+             Natalia and Araya, Carlos and Yan, Siqi and Reblitz-Richardson, Orion},
+  journal = {arXiv preprint arXiv:2009.07896},
+  year    = {2020}
+}
+
+@techreport{krizhevsky2009cifar,
+  title       = {Learning Multiple Layers of Features from Tiny Images},
+  author      = {Krizhevsky, Alex},
+  institution = {University of Toronto},
+  year        = {2009}
+}
+
+@inproceedings{hendrycks2019benchmarking,
+  title     = {Benchmarking Neural Network Robustness to Common Corruptions and Perturbations},
+  author    = {Hendrycks, Dan and Dietterich, Thomas},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019}
+}
+
+@article{cliff1993,
+  title   = {Dominance Statistics: Ordinal Analyses to Answer Ordinal Questions},
+  author  = {Cliff, Norman},
+  journal = {Psychological Bulletin},
+  volume  = {114},
+  number  = {3},
+  pages   = {494--509},
+  year    = {1993}
+}
+
+@article{holm1979,
+  title   = {A Simple Sequentially Rejective Multiple Test Procedure},
+  author  = {Holm, Sture},
+  journal = {Scandinavian Journal of Statistics},
+  volume  = {6},
+  number  = {2},
+  pages   = {65--70},
+  year    = {1979}
+}
+
+@article{schuirmann1987,
+  title   = {A Comparison of the Two One-Sided Tests Procedure and the Power Approach for Assessing
+             the Equivalence of Average Bioavailability},
+  author  = {Schuirmann, Donald J.},
+  journal = {Journal of Pharmacokinetics and Biopharmaceutics},
+  volume  = {15},
+  number  = {6},
+  pages   = {657--680},
+  year    = {1987}
+}
+
+@article{okabe2008,
+  title   = {Color Universal Design: How to Make Figures and Presentations That Are Friendly to
+             Colorblind People},
+  author  = {Okabe, Masataka and Ito, Kei},
+  journal = {J*FLY Data Depository for Drosophila Researchers},
+  year    = {2008}
+}
