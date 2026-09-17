@@ -48,9 +48,14 @@ written.
 
 Built with MiKTeX 25.12 (`make` in `paper/iclr2027/`):
 
-- **Main text: 8 of the 9 pages allowed**, measured on the compiled PDF as everything preceding the
-  ethics statement. References (pages 9–11) and appendices (page 12) are excluded from the limit
-  under the ICLR rules. Twelve pages in total.
+- **Main text: 9 of the 9 pages allowed**, measured on the compiled PDF as everything preceding the
+  ethics statement. References (pages 9–12) and appendices (pages 12–26) are excluded from the limit
+  under the ICLR rules. Twenty-six pages in total.
+
+  *Updated after the reviewer response of 2026-09-17, which added four appendices (the generator,
+  architectures and training, per-dataset shifts, the two reimplemented metrics). Note that
+  `check_submission.py` reports "8 of 9" here: it takes the page containing the ethics statement
+  minus one, and the conclusion now shares page 9 with it. The true main-text count is 9.*
 - BibTeX: no errors. LaTeX: no undefined citations, no undefined references.
 - Overfull boxes: **0**. The related-work table originally ran 97pt past the text block and into the
   margin; it now uses wrapped fixed-width columns.
