@@ -131,7 +131,11 @@ def run_width(seeds=5, widths=(32, 64, 128, 256, 512, 1024), n_probe=300, n_step
                 rho = change(A0, attribute(fn, probe, ex, use_cache=False, **kw), l1_abs, d_l1)[m]
                 rows.append({
                     "seed": seed, "width": w, "explainer": ex,
-                    "n_params": 20 * w + w * w + w,
+                    # Every weight and bias of MLP(20, hidden=(w, w)):
+                    # (20w + w) + (w^2 + w) + (w + 1) = w^2 + 23w + 1. The earlier form,
+                    # 20w + w^2 + w, dropped the first-layer bias and the output layer,
+                    # undercounting by 2w + 1.
+                    "n_params": w * w + 23 * w + 1,
                     "delta": float(delta.mean()), "rho_null": float(rho.mean()),
                     "ratio": float(delta.mean() / rho.mean()),
                     "n_preserved": int(m.sum()), "seconds": time.time() - t0,

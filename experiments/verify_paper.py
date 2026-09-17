@@ -154,7 +154,9 @@ def main():
         pg = w[w.explainer == "gradient_x_input"].groupby("width").apply(
             lambda x: x.delta.mean() / x.rho_null.mean(), include_groups=False)
         c("8.1 width 32 ratio, GxI", pg.get(32), 1.62, tol=0.02, source="T14")
-        c("8.1 width 1024 params", w[w.width == 1024].n_params.iloc[0], 1_070_080, tol=0,
+        c("8.1 width 1024 params", w[w.width == 1024].n_params.iloc[0], 1_072_129, tol=0,
+          source="T14")
+        c("8.1 width parameter range", w.n_params.max() / w.n_params.min(), 608.8, tol=0.1,
           source="T14")
 
     sw = load("scale_text_sweep_ig.csv")
