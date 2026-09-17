@@ -182,9 +182,9 @@ def main():
     print(f"mean omega under concept shift = {con.omega.mean():.3f}")
     if abs(m) > 0.3:
         print("\n  This is the opposite of the synthetic result (r = +0.12, 1.5% of variance), so")
-        print("  it needs a cause rather than a footnote. The update configuration is identical to")
-        print("  the synthetic one, so update strength cannot be the explanation on its own --")
-        print("  testing it directly rather than assuming:")
+        print("  it needs a cause rather than a footnote. This arm updates harder than the synthetic")
+        print("  headline (lr 5e-4, 20 epochs against 2e-4, 2), so update strength is a live")
+        print("  explanation -- testing it directly rather than assuming:")
         sweep = []
         for ep in (2, 20, 100):
             ucfg = UpdateConfig(epochs=ep)
