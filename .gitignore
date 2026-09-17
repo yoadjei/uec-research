@@ -17,3 +17,23 @@ __pycache__/
 !/results/scale_text_heavy.csv
 !/results/scale_text_sweep_ig.csv
 !/results/scale_text_sweep_summary.csv
+
+# Paper sources, untracked while the submission is under double-blind review. This repository is
+# public and every commit carries the authors' names, so the manuscript must not sit in it: a
+# reviewer searching a distinctive phrase would land here. Restore after decisions.
+/paper/iclr2027/main.tex
+/paper/iclr2027/main.pdf
+
+# Supplementary archive and the staging tree it is built from: large, regenerated, not source.
+/paper/supplementary.zip
+/paper/table/
+/paper/tables.md
+/paper/checkpoints/
+/paper/configs/
+/paper/experiments/
+/paper/figures/
+/paper/results/
+
+# Local working notes
+/general writing style.txt
+/iclr-2027-style-files/
