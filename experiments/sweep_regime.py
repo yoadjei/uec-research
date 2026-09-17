@@ -60,7 +60,7 @@ def main():
                     ucfg = UpdateConfig(lr=lr, epochs=ep)
                     ck = build_checkpoints(
                         src, tgt, seed, a.n_source, a.n_update, cfg, ucfg,
-                        regimes=("null", "seed", "treatment"),
+                        regimes=("matched_null", "seed", "treatment"),
                     )
                     f0 = ck["source"][0]
                     m = preserved_mask(
@@ -73,15 +73,15 @@ def main():
                         A0 = attribute(f0, probe, name)
                         rec = {
                             r: change(A0, attribute(ck[r][0], probe, name), l1_abs, d_spearman)[m]
-                            for r in ("null", "seed", "treatment")
+                            for r in ("matched_null", "seed", "treatment")
                         }
                         rows.append({
                             "seed": seed, "magnitude": mag, "update_lr": lr, "update_epochs": ep,
                             "explainer": name,
                             "delta": rec["treatment"].mean(),
-                            "rho_null": rec["null"].mean(),
+                            "rho_null": rec["matched_null"].mean(),
                             "rho_seed": rec["seed"].mean(),
-                            "ratio": rec["treatment"].mean() / rec["null"].mean(),
+                            "ratio": rec["treatment"].mean() / rec["matched_null"].mean(),
                             "ratio_seed": rec["treatment"].mean() / rec["seed"].mean(),
                             "preserved_frac": float(m.mean()),
                             "agree": agreement_rate(f0, ck["treatment"][0], probe),
