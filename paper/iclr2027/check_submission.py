@@ -151,7 +151,7 @@ print("=" * 86)
 for item in [
     "author quotas and reciprocal-reviewer eligibility: depends on OpenReview profiles",
     "dual-submission status: author knowledge",
-    "reference accuracy for 2025-2026 entries: see docs/reference_audit.md",
+    "reference accuracy for 2025-2026 entries: checked by the authors against each source",
     "supplementary code must be anonymised before upload",
 ]:
     print(f"  [MANUAL] {item}")

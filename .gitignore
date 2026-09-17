@@ -23,6 +23,21 @@ __pycache__/
 # reviewer searching a distinctive phrase would land here. Restore after decisions.
 /paper/iclr2027/main.tex
 /paper/iclr2027/main.pdf
+# paper.md is the same manuscript in markdown, title and abstract verbatim. Removing only the
+# LaTeX would have left the whole paper here in plain text.
+/paper/paper.md
+/paper/reviews.md
+/paper/novelty_delta.md
+
+# Drafting and literature-audit notes. Not needed to reproduce anything; kept locally.
+# docs/spec.md, theory.md and preregistration_scale.md stay tracked: the first is the
+# implementation contract, the second the derivations the theory tests check, the third the
+# analysis plan fixed before the sweep ran.
+/docs/audit_coverage.md
+/docs/audit_inventory.md
+/docs/lit_matrix.csv
+/docs/terminology_map.md
+/docs/reference_audit.md
 
 # Supplementary archive and the staging tree it is built from: large, regenerated, not source.
 /paper/supplementary.zip

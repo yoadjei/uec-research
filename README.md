@@ -29,7 +29,7 @@ src/uec/
   stats/       paired tests, effect sizes, seed bootstrap
   plots/       figure builders
 experiments/   runners; each writes a parquet to results/
-docs/          spec.md (the contract), theory.md (proofs), lit_matrix.csv, terminology_map.md
+docs/          spec.md (the contract), theory.md (proofs), preregistration_scale.md
 tests/         101 tests, including numeric verification of every proposition
 ```
 
